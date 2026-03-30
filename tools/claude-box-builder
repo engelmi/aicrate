@@ -1,0 +1,202 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+ROOT_DIR="${SCRIPT_DIR}"/..
+SUBMODULES_DIR="${ROOT_DIR}"/submodules
+
+ANTHROPIC_SKILLS_REPO="anthropic-skills"
+ANTHROPIC_SKILLS_DIR="${SUBMODULES_DIR}"/"${ANTHROPIC_SKILLS_REPO}"/skills
+OBRA_SKILLS_REPO="obra-superpowers"
+OBRA_SKILLS_DIR="${SUBMODULES_DIR}"/"${OBRA_SKILLS_REPO}"/skills
+
+TMP_OUT_ROOT_DIR="${ROOT_DIR}"/out
+
+OCI_REGISTRY="quay.io"
+OCI_ORGANIZATION="rhivos-ai-tools"
+
+clean() {
+    echo "Removing temporary artifacts..."
+    rm -rf "${TMP_OUT_ROOT_DIR}"
+}
+
+claude() {
+    podman build \
+        -f "${ROOT_DIR}"/containers/Containerfile \
+        -t "${OCI_REGISTRY}/${OCI_ORGANIZATION}/claude:latest" \
+        "${ROOT_DIR}"
+}
+
+list_available_skills() {
+    for dir in "${ANTHROPIC_SKILLS_DIR}"/*; do
+        name=$(basename "${dir}")
+        echo "${ANTHROPIC_SKILLS_REPO}/${name}"
+    done
+
+    for dir in "${OBRA_SKILLS_DIR}"/*; do
+        name=$(basename "${dir}")
+        echo "${OBRA_SKILLS_REPO}/${name}"
+    done
+}
+
+build_skills() {
+    BUILD_SKILLS_USAGE=$(cat <<'EOF'
+Build OCI artifacts for skills. By default, OCI artifacts for all
+available skills are built.
+
+Usage:
+    claude-box-builder skills build [options]
+
+Flags:
+    --name      Build only the skill identified by name
+    -h, --help  Print help
+EOF
+)
+    NAME="*"
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --name)
+                shift
+                NAME="${1}"
+                shift
+                ;;
+            -h|--help)
+                echo "$BUILD_SKILLS_USAGE"
+                exit 0
+                ;;
+            -*|--*)
+                echo "Unknown option $1"
+                echo "$BUILD_SKILLS_USAGE"
+                exit 1
+                ;;
+            *)
+                echo "Unknown positional argument: $1"
+                echo "$BUILD_SKILLS_USAGE"
+                exit 1
+                ;;
+        esac
+    done
+
+    mapfile -t available_skills < <(list_available_skills)
+    for skill in "${available_skills[@]}"; do
+        if [[ "${skill}" == $NAME ]]; then
+
+            SKILL_DIR=""
+            if [[ "${skill}" == "${ANTHROPIC_SKILLS_REPO}"/* ]]; then
+                SKILL_DIR="${ANTHROPIC_SKILLS_DIR}"
+            elif [[ "${skill}" == "${OBRA_SKILLS_REPO}"/* ]]; then
+                SKILL_DIR="${OBRA_SKILLS_DIR}"
+            else
+                echo "nope"
+            fi
+            SKILL_NAME=$(basename "${skill}")
+            ARTIFACT_NAME="${OCI_REGISTRY}/${OCI_ORGANIZATION}/${SKILL_NAME}":latest
+            TMP_OUT_DIR="${TMP_OUT_ROOT_DIR}/${SKILL_NAME}"
+            TMP_OUT_FILE="${TMP_OUT_DIR}/${SKILL_NAME}.tar"
+
+            mkdir -p "${TMP_OUT_DIR}"
+            pushd "${SKILL_DIR}"
+            tar -cf "${TMP_OUT_FILE}" "${SKILL_NAME}" | \
+                podman artifact add \
+                --replace "${ARTIFACT_NAME}" \
+                "${TMP_OUT_FILE}"
+            popd
+            git -C "${SKILL_DIR}" rev-parse HEAD > "${TMP_OUT_DIR}/version"
+            podman artifact add \
+                --append "${ARTIFACT_NAME}" \
+                "${TMP_OUT_DIR}/version"
+        fi
+    done
+}
+
+skills(){
+    SKILLS_USAGE=$(cat <<'EOF'
+Operations for skills
+
+Usage:
+    claude-box-builder skills [commands]
+    claude-box-builder skills [options]
+
+Available commands:
+    ls          List all available skills
+    build       Build OCI artifacts for the selected skills
+
+Flags:
+    -h, --help  Print help
+EOF
+)
+
+    COMMAND=""
+    case $1 in
+        ls)
+            COMMAND=list_available_skills
+            shift
+            ;;
+        build)
+            COMMAND=build_skills
+            shift
+            ;;
+        -h|--help)
+            echo "${SKILLS_USAGE}"
+            exit 0
+            ;;
+        *)
+            echo "Unknown positional argument: $1"
+            echo "${SKILLS_USAGE}"
+            exit 1
+            ;;
+    esac
+
+    $COMMAND "$@"
+}
+
+agents(){
+    echo "Building OCI artifacts for agents..."
+    # podman artifact add --replace 
+}
+
+BASIC_USAGE=$(cat <<'EOF'
+CLI to build OCI artifacts for skills and agents
+
+Usage:
+    claude-box-builder [command]
+
+Available commands:
+    skills      Build OCI artifacts for skills
+    agents      Build OCI artifacts for agents
+    clean       Remove all temporary files
+
+Flags:
+    -h, --help  Print help
+EOF
+)
+
+COMMAND=""
+case $1 in
+    claude)
+        COMMAND=claude
+        shift
+        ;;
+    skills)
+        COMMAND=skills
+        shift
+        ;;
+    agents)
+        COMMAND=agents
+        shift
+        ;;
+    clean)
+        COMMAND=clean
+        shift
+        ;;
+    -h|--help)
+        echo "${BASIC_USAGE}"
+        exit 0
+        ;;
+    *)
+        echo "Unknown positional argument: $1"
+        echo "${BASIC_USAGE}"
+        exit 1
+        ;;
+esac
+
+$COMMAND "$@"

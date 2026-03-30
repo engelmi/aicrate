@@ -1,0 +1,6 @@
+[Unit]
+Description=Unpacks skills mounted as OCI artifacts
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/unpack-skills.sh

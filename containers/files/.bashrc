@@ -1,0 +1,8 @@
+# Claude variables
+export CLAUDE_CODE_USE_VERTEX=1
+export CLOUD_ML_REGION=us-east5
+export ANTHROPIC_VERTEX_PROJECT_ID=itpc-gcp-core-pe-eng-claude
+
+# ls
+alias ll='ls -alF --color=auto'
+alias ls='ls -A --color=auto'
