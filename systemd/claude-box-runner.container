@@ -1,0 +1,12 @@
+[Unit]
+Description=claude box runner
+
+[Container]
+Image=quay.io/rhivos-ai-tools/claude:latest
+Name=claude-box-container
+Pod=claude-box
+ExecStart=/sbin/init
+Mount=type=artifact,src=quay.io/rhivos-skills/xlsx:latest,dst=/var/oci-artifacts/skills/xlsx
+Mount=type=artifact,src=quay.io/rhivos-skills/docx:latest,dst=/var/oci-artifacts/skills/docx
+Volume=~/.config/gcloud/:/root/.config/gcloud
+SecurityLabelDisable=true

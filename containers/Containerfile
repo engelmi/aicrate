@@ -5,7 +5,7 @@ FROM quay.io/fedora/fedora:${fedora_version}
 
 # Install Claude
 RUN dnf upgrade -y && \
-    dnf install npm tree -y
+    dnf install systemd npm tree -y
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Copy .bashrc containing variable exports for claude
@@ -17,4 +17,5 @@ RUN mkdir -p /root/.claude/skills
 # Setup unpack-skills service
 COPY containers/files/systemd/unpack-skills.sh /usr/local/bin/unpack-skills.sh
 COPY containers/files/systemd/unpack-skills.service /etc/systemd/system/unpack-skills.service
-RUN ln -s /etc/systemd/system/unpack-skills.service /etc/systemd/system/multi-user.target.wants/unpack-skills.service
+RUN mkdir -p /etc/systemd/system/multi-user.target.wants && \
+    ln -s /etc/systemd/system/unpack-skills.service /etc/systemd/system/multi-user.target.wants/unpack-skills.service

@@ -1,0 +1,42 @@
+default:
+  claudebox:
+    image: quay.io/rhivos-ai-tools/claude-box:latest
+    workspace: ~/
+  skills:
+      - quay.io/rhivos-ai-tools/algorithmic-art:latest
+      - quay.io/rhivos-ai-tools/brand-guidelines:latest
+      - quay.io/rhivos-ai-tools/canvas-design:latest
+      - quay.io/rhivos-ai-tools/claude-api:latest
+      - quay.io/rhivos-ai-tools/doc-coauthoring:latest
+      - quay.io/rhivos-ai-tools/docx:latest
+      - quay.io/rhivos-ai-tools/frontend-design:latest
+      - quay.io/rhivos-ai-tools/internal-comms:latest
+      - quay.io/rhivos-ai-tools/mcp-builder:latest
+      - quay.io/rhivos-ai-tools/pdf:latest
+      - quay.io/rhivos-ai-tools/pptx:latest
+      - quay.io/rhivos-ai-tools/skill-creator:latest
+      - quay.io/rhivos-ai-tools/slack-gif-creator:latest
+      - quay.io/rhivos-ai-tools/theme-factory:latest
+      - quay.io/rhivos-ai-tools/webapp-testing:latest
+      - quay.io/rhivos-ai-tools/web-artifacts-builder:latest
+      - quay.io/rhivos-ai-tools/xlsx:latest
+      - quay.io/rhivos-ai-tools/brainstorming:latest
+      - quay.io/rhivos-ai-tools/dispatching-parallel-agents:latest
+      - quay.io/rhivos-ai-tools/executing-plans:latest
+      - quay.io/rhivos-ai-tools/finishing-a-development-branch:latest
+      - quay.io/rhivos-ai-tools/receiving-code-review:latest
+      - quay.io/rhivos-ai-tools/requesting-code-review:latest
+      - quay.io/rhivos-ai-tools/subagent-driven-development:latest
+      - quay.io/rhivos-ai-tools/systematic-debugging:latest
+      - quay.io/rhivos-ai-tools/test-driven-development:latest
+      - quay.io/rhivos-ai-tools/using-git-worktrees:latest
+      - quay.io/rhivos-ai-tools/using-superpowers:latest
+      - quay.io/rhivos-ai-tools/verification-before-completion:latest
+      - quay.io/rhivos-ai-tools/writing-plans:latest
+      - quay.io/rhivos-ai-tools/writing-skills:latest
+  mcp:
+    - image: localhost/testing-farm-mcp:latest
+
+"/home/mengel/projects/centos-auto/selcraft":
+  claudebox:
+    workspace: /home/mengel/projects/centos-auto/selcraft

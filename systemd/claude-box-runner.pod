@@ -1,0 +1,11 @@
+[Unit]
+Description=MyApp Pod
+After=network.target
+
+[Pod]
+PodName=claude-box
+PublishPort=8080:80
+PublishPort=8443:443
+
+[Install]
+WantedBy=multi-user.target

@@ -13,6 +13,7 @@ TMP_OUT_ROOT_DIR="${ROOT_DIR}"/out
 
 OCI_REGISTRY="quay.io"
 OCI_ORGANIZATION="rhivos-ai-tools"
+PROJECT_NAME="claude-box"
 
 clean() {
     echo "Removing temporary artifacts..."
@@ -22,7 +23,7 @@ clean() {
 claude() {
     podman build \
         -f "${ROOT_DIR}"/containers/Containerfile \
-        -t "${OCI_REGISTRY}/${OCI_ORGANIZATION}/claude:latest" \
+        -t "${OCI_REGISTRY}/${OCI_ORGANIZATION}/${PROJECT_NAME}:latest" \
         "${ROOT_DIR}"
 }
 
@@ -35,6 +36,60 @@ list_available_skills() {
     for dir in "${OBRA_SKILLS_DIR}"/*; do
         name=$(basename "${dir}")
         echo "${OBRA_SKILLS_REPO}/${name}"
+    done
+}
+
+list_available_oci_skills() {
+    local artifacts=$(podman artifact ls --format "{{.Repository}}:{{.Tag}}" | grep "${OCI_REGISTRY}/${OCI_ORGANIZATION}/")
+    for artifact in $artifacts; do
+        echo $artifact
+    done
+}
+
+remove_skills() {
+    REMOVE_SKILLS_USAGE=$(cat <<'EOF'
+Remove OCI artifacts for skills. By default, OCI artifacts for all
+available skills are removed.
+
+Usage:
+    claude-box-builder skills remove [options]
+
+Flags:
+    --name      Remove only the skill identified by name
+    -h, --help  Print help
+EOF
+)
+    NAME="*"
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --name)
+                shift
+                NAME="${1}"
+                shift
+                ;;
+            -h|--help)
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 0
+                ;;
+            -*|--*)
+                echo "Unknown option $1"
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 1
+                ;;
+            *)
+                echo "Unknown positional argument: $1"
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 1
+                ;;
+        esac
+    done
+
+    mapfile -t available_oci_skills < <(list_available_oci_skills)
+    for oci_skill in "${available_oci_skills[@]}"; do
+        if [[ "${oci_skill}" == $NAME ]]; then
+            result=$(podman artifact rm "${oci_skill}")
+            echo "Removed ${oci_skill} (${result})"
+        fi
     done
 }
 
@@ -119,6 +174,7 @@ Usage:
 Available commands:
     ls          List all available skills
     build       Build OCI artifacts for the selected skills
+    remove      Remove OCI artifacts for the selected skills
 
 Flags:
     -h, --help  Print help
@@ -133,6 +189,10 @@ EOF
             ;;
         build)
             COMMAND=build_skills
+            shift
+            ;;
+        remove)
+            COMMAND=remove_skills
             shift
             ;;
         -h|--help)
