@@ -118,6 +118,7 @@ def cli_run(args: argparse.Namespace):
     
     claudebox_config = merged_config.get("claudebox", {})
     skills_config = merged_config.get("skills", {})
+    agents_config = merged_config.get("agents", {})
     mcp_config = merged_config.get("mcp", {})
 
     pod_name=f"claudebox-{workspace_dir.name}"
@@ -144,6 +145,12 @@ def cli_run(args: argparse.Namespace):
         skill_mounts.append(
             f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
         )
+    agent_mounts: list[str] = []
+    for agent in agents_config:
+        name = agent.split("/")[-1].split(":")[0]
+        agent_mounts.append(
+            f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
+        )
     
     volumes: list[str] = []
     volumes.append(f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud")
@@ -163,7 +170,7 @@ def cli_run(args: argparse.Namespace):
                 Exec="/sbin/init",
                 Pull="never",
                 SecurityLabelDisable=True,
-                Mounts=skill_mounts,
+                Mounts=[*skill_mounts, *agent_mounts],
                 Volumes=volumes,
             ),
             Install=QuadletSectionInstall(

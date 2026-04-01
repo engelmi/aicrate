@@ -5,7 +5,12 @@ FROM quay.io/fedora/fedora:${fedora_version}
 
 # Install Claude
 RUN dnf upgrade -y && \
-    dnf install systemd npm tree -y
+    dnf install \
+        git \
+        npm \
+        systemd \
+        tree \
+        -y
 RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Copy .bashrc containing variable exports for claude
@@ -13,9 +18,16 @@ COPY containers/files/.bashrc /root/.bashrc
 
 # Create skills directory for claude
 RUN mkdir -p /root/.claude/skills
-
 # Setup unpack-skills service
 COPY containers/files/systemd/unpack-skills.sh /usr/local/bin/unpack-skills.sh
 COPY containers/files/systemd/unpack-skills.service /etc/systemd/system/unpack-skills.service
 RUN mkdir -p /etc/systemd/system/multi-user.target.wants && \
-    ln -s /etc/systemd/system/unpack-skills.service /etc/systemd/system/multi-user.target.wants/unpack-skills.service
+ln -s /etc/systemd/system/unpack-skills.service /etc/systemd/system/multi-user.target.wants/unpack-skills.service
+
+# Create agents directory for claude
+RUN mkdir -p /root/.claude/agents
+# Setup unpack-skills service
+COPY containers/files/systemd/unpack-agents.sh /usr/local/bin/unpack-agents.sh
+COPY containers/files/systemd/unpack-agents.service /etc/systemd/system/unpack-agents.service
+RUN mkdir -p /etc/systemd/system/multi-user.target.wants && \
+ln -s /etc/systemd/system/unpack-agents.service /etc/systemd/system/multi-user.target.wants/unpack-agents.service

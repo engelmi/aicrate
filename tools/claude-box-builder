@@ -10,11 +10,18 @@ ANTHROPIC_SKILLS_DIR="${SKILLS_DIR}"/"${ANTHROPIC_SKILLS_REPO}"
 OBRA_SKILLS_REPO="obra"
 OBRA_SKILLS_DIR="${SKILLS_DIR}"/"${OBRA_SKILLS_REPO}"
 
+AGENT_DIR="${ROOT_DIR}"/agents
+AGENCY_AGENT_REPO="agency"
+AGENCY_AGENT_DIR="${AGENT_DIR}"/"${AGENCY_AGENT_REPO}"
+
 TMP_OUT_ROOT_DIR="${ROOT_DIR}"/out
 
 OCI_REGISTRY="quay.io"
 OCI_ORGANIZATION="rhivos-ai-tools"
 PROJECT_NAME="claude-box"
+
+SKILL_ARTIFACT_PREFIX="skill"
+AGENT_ARTIFACT_PREFIX="agent"
 
 clean() {
     echo "Removing temporary artifacts..."
@@ -43,7 +50,9 @@ list_available_skills() {
 list_available_oci_skills() {
     local artifacts=$(podman artifact ls --format "{{.Repository}}:{{.Tag}}" | grep "${OCI_REGISTRY}/${OCI_ORGANIZATION}/")
     for artifact in $artifacts; do
-        echo $artifact
+        if [[ "${artifact}" == "${OCI_REGISTRY}/${OCI_ORGANIZATION}/${SKILL_ARTIFACT_PREFIX}"* ]]; then
+            echo $artifact
+        fi
     done
 }
 
@@ -132,6 +141,7 @@ EOF
         esac
     done
 
+    TMP_SKILL_OUT_DIR="${TMP_OUT_ROOT_DIR}/skills"
     mapfile -t available_skills < <(list_available_skills)
     for skill in "${available_skills[@]}"; do
         if [[ "${skill}" == $NAME ]]; then
@@ -142,11 +152,12 @@ EOF
             elif [[ "${skill}" == "${OBRA_SKILLS_REPO}"/* ]]; then
                 SKILL_DIR="${OBRA_SKILLS_DIR}"
             else
-                echo "nope"
+                echo "Unknown skill '${skill}'"
+                exit 1
             fi
             SKILL_NAME=$(basename "${skill}")
-            ARTIFACT_NAME="${OCI_REGISTRY}/${OCI_ORGANIZATION}/${SKILL_NAME}":latest
-            TMP_OUT_DIR="${TMP_OUT_ROOT_DIR}/${SKILL_NAME}"
+            ARTIFACT_NAME="${OCI_REGISTRY}/${OCI_ORGANIZATION}/${SKILL_ARTIFACT_PREFIX}-${SKILL_NAME}":latest
+            TMP_OUT_DIR="${TMP_SKILL_OUT_DIR}/${SKILL_NAME}"
             TMP_OUT_FILE="${TMP_OUT_DIR}/${SKILL_NAME}.tar"
 
             mkdir -p "${TMP_OUT_DIR}"
@@ -156,10 +167,13 @@ EOF
                 --replace "${ARTIFACT_NAME}" \
                 "${TMP_OUT_FILE}"
             popd
-            git -C "${SKILL_DIR}" rev-parse HEAD > "${TMP_OUT_DIR}/version"
+            SKILL_VERSION=$(git -C "${SKILL_DIR}" rev-parse HEAD)
+            SKILL_URL=$(git -C "${SKILL_DIR}" config --get remote.origin.url)
+            echo "url: ${SKILL_URL}" > "${TMP_OUT_DIR}/skill-meta.info"
+            echo "version: ${SKILL_VERSION}" >> "${TMP_OUT_DIR}/skill-meta.info"
             podman artifact add \
                 --append "${ARTIFACT_NAME}" \
-                "${TMP_OUT_DIR}/version"
+                "${TMP_OUT_DIR}/skill-meta.info"
         fi
     done
 }
@@ -174,6 +188,7 @@ Usage:
 
 Available commands:
     ls          List all available skills
+    oci-ls      List locally available OCI skill artifacts
     build       Build OCI artifacts for the selected skills
     remove      Remove OCI artifacts for the selected skills
 
@@ -186,6 +201,10 @@ EOF
     case $1 in
         ls)
             COMMAND=list_available_skills
+            shift
+            ;;
+        oci-ls)
+            COMMAND=list_available_oci_skills
             shift
             ;;
         build)
@@ -210,9 +229,213 @@ EOF
     $COMMAND "$@"
 }
 
+
+list_available_agents() {
+    for dir in "${AGENCY_AGENT_DIR}"/*; do
+
+        if [[ -d "${dir}" ]]; then
+            category=$(basename "${dir}")
+            echo "${AGENCY_AGENT_REPO}/${category}"
+            for subdir in "${dir}"/*; do
+                name=$(basename "${subdir}")
+                echo "   - ${name}"
+            done
+        else
+            name=$(basename "${dir}")
+            echo "${AGENCY_AGENT_REPO}"
+            echo "   - ${name}"
+        fi
+    done
+}
+
+list_available_agent_category() {
+    for dir in "${AGENCY_AGENT_DIR}"/*; do
+        agent=$(basename "${dir}")
+
+        provider_path=$(realpath "${dir}/..")
+        provider=$(basename "${provider_path}")
+
+        echo "${provider}/${agent}"
+    done
+}
+
+list_available_oci_agents() {
+    local artifacts=$(podman artifact ls --format "{{.Repository}}:{{.Tag}}" | grep "${OCI_REGISTRY}/${OCI_ORGANIZATION}/")
+    
+    for artifact in $artifacts; do
+        if [[ "${artifact}" == "${OCI_REGISTRY}/${OCI_ORGANIZATION}/${AGENT_ARTIFACT_PREFIX}"* ]]; then
+            echo $artifact
+        fi
+    done
+}
+
+remove_agents() {
+    REMOVE_SKILLS_USAGE=$(cat <<'EOF'
+Remove OCI artifacts for agents. By default, OCI artifacts for all
+available agents are removed.
+
+Usage:
+    claude-box-builder agents remove [options]
+
+Flags:
+    --category      Remove only the agent identified by category.
+    -h, --help      Print help
+EOF
+)
+    CATEGORY="*"
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --category)
+                shift
+                CATEGORY="${1}"
+                shift
+                ;;
+            -h|--help)
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 0
+                ;;
+            -*|--*)
+                echo "Unknown option $1"
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 1
+                ;;
+            *)
+                echo "Unknown positional argument: $1"
+                echo "$REMOVE_SKILLS_USAGE"
+                exit 1
+                ;;
+        esac
+    done
+
+    mapfile -t available_oci_agents < <(list_available_oci_agents)
+    for oci_agent in "${available_oci_agents[@]}"; do
+        if [[ "${oci_agent}" == $CATEGORY ]]; then
+            result=$(podman artifact rm "${oci_agent}")
+            echo "Removed ${oci_agent} (${result})"
+        fi
+    done
+}
+
+build_agents() {
+    BUILD_AGENT_USAGE=$(cat <<'EOF'
+Build OCI artifacts for agents. By default, OCI artifacts for all
+available agents are built.
+
+Usage:
+    claude-box-builder agents build [options]
+
+Flags:
+    --category      Build only the agent identified by category in the form of <provider>/<category>.
+    -h, --help      Print help
+EOF
+)
+    CATEGORY="*"
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --category)
+                shift
+                CATEGORY="${1}"
+                shift
+                ;;
+            -h|--help)
+                echo "$BUILD_AGENT_USAGE"
+                exit 0
+                ;;
+            -*|--*)
+                echo "Unknown option $1"
+                echo "$BUILD_AGENT_USAGE"
+                exit 1
+                ;;
+            *)
+                echo "Unknown positional argument: $1"
+                echo "$BUILD_AGENT_USAGE"
+                exit 1
+                ;;
+        esac
+    done
+
+    TMP_AGENT_OUT_DIR="${TMP_OUT_ROOT_DIR}/agents"
+    mapfile -t available_agent_categories < <(list_available_agent_category)
+    for agent_category in "${available_agent_categories[@]}"; do
+        if [[ "${agent_category}" == $CATEGORY ]]; then
+
+            CATEGORY_NAME=$(basename "${agent_category}")
+
+            PROVIDER_DIR=$(realpath "${AGENT_DIR}/${agent_category}/..")
+
+            ARTIFACT_NAME="${OCI_REGISTRY}/${OCI_ORGANIZATION}/${AGENT_ARTIFACT_PREFIX}-${CATEGORY_NAME}":latest
+            TMP_OUT_DIR="${TMP_AGENT_OUT_DIR}/${CATEGORY_NAME}"
+            TMP_OUT_FILE="${TMP_OUT_DIR}/${CATEGORY_NAME}.tar"
+
+            mkdir -p "${TMP_OUT_DIR}"
+            pushd "${PROVIDER_DIR}"
+            tar -cf "${TMP_OUT_FILE}" "${CATEGORY_NAME}" | \
+                podman artifact add \
+                --replace "${ARTIFACT_NAME}" \
+                "${TMP_OUT_FILE}"
+            popd
+
+            GIT_DIR=$(dirname "${AGENT_DIR}/${agent}")
+            AGENT_VERSION=$(git -C "${GIT_DIR}" rev-parse HEAD)
+            AGENT_URL=$(git -C "${GIT_DIR}" config --get remote.origin.url)
+            echo "url: ${AGENT_URL}" > "${TMP_OUT_DIR}/agent-meta.info"
+            echo "version: ${AGENT_VERSION}" >> "${TMP_OUT_DIR}/agent-meta.info"
+            podman artifact add \
+                --append "${ARTIFACT_NAME}" \
+                "${TMP_OUT_DIR}/agent-meta.info"
+        fi
+    done
+}
+
 agents(){
-    echo "Building OCI artifacts for agents..."
-    # podman artifact add --replace 
+    AGENTS_USAGE=$(cat <<'EOF'
+Operations for agents
+
+Usage:
+    claude-box-builder agents [commands]
+    claude-box-builder agents [options]
+
+Available commands:
+    ls          List all available agents
+    oci-ls      List locally available OCI agent artifacts
+    build       Build OCI artifacts for the selected agents
+    remove      Remove OCI artifacts for the selected agents
+
+Flags:
+    -h, --help  Print help
+EOF
+)
+
+    COMMAND=""
+    case $1 in
+        ls)
+            COMMAND=list_available_agents
+            shift
+            ;;
+        oci-ls)
+            COMMAND=list_available_oci_agents
+            shift
+            ;;
+        build)
+            COMMAND=build_agents
+            shift
+            ;;
+        remove)
+            COMMAND=remove_agents
+            shift
+            ;;
+        -h|--help)
+            echo "${AGENTS_USAGE}"
+            exit 0
+            ;;
+        *)
+            echo "Unknown positional argument: $1"
+            echo "${AGENTS_USAGE}"
+            exit 1
+            ;;
+    esac
+
+    $COMMAND "$@"
 }
 
 BASIC_USAGE=$(cat <<'EOF'
