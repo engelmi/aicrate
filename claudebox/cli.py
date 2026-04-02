@@ -9,7 +9,8 @@ from claudebox.version import version
 from claudebox.logger import LogLevel, logger
 from claudebox.common.ds import deep_merge
 from claudebox.common.command import run_cmd_with_error_handler
-from claudebox.systemd.quadlet import QuadletSectionContainer, QuadletSectionInstall, QuadletSectionPod, QuadletSectionUnit, QuadletContainer, QuadletPod
+from claudebox.systemd.quadlet import build_from_config
+from claudebox.engine import run_claudebox
 
 
 def parse_log_level_option(option: str) -> LogLevel:
@@ -65,6 +66,17 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         default="/home/mengel/projects/engelmi/claude-box/claudebox/claudebox.conf.yml",
     )
     init_parser.add_argument(
+        "--mode",
+        "-m",
+        help=(
+            "The mode how to run claudebox"
+        ),
+        dest="mode",
+        choices=["systemd", "podman"],
+        default="podman",
+    )
+    
+    init_parser.add_argument(
         "--workspace",
         "-w",
         help=(
@@ -116,71 +128,15 @@ def cli_run(args: argparse.Namespace):
 
     logger.debug(f"Merged claudebox config for workspace {workspace_dir}:\n{json.dumps(merged_config, indent=2, sort_keys=True)}")
     
-    claudebox_config = merged_config.get("claudebox", {})
-    skills_config = merged_config.get("skills", {})
-    agents_config = merged_config.get("agents", {})
-    mcp_config = merged_config.get("mcp", {})
-
-    pod_name=f"claudebox-{workspace_dir.name}"
-    pod=QuadletPod(
-        Filepath=output_dir / Path(f"{pod_name}.pod"),
-        Unit=QuadletSectionUnit(
-            Description=f"Pod for {pod_name}", 
-            Before=[],
-            After=["network.target"], 
-            ),
-        Pod=QuadletSectionPod(
-            PodName=pod_name,
-        ),
-        Install=QuadletSectionInstall(
-            WantedBy=[]
-        )
-    )
-
-    container_name = f"claudebox-{workspace_dir.name}"
-
-    skill_mounts: list[str] = []
-    for skill in skills_config:
-        name = skill.split("/")[-1].split(":")[0]
-        skill_mounts.append(
-            f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
-        )
-    agent_mounts: list[str] = []
-    for agent in agents_config:
-        name = agent.split("/")[-1].split(":")[0]
-        agent_mounts.append(
-            f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
-        )
-    
-    volumes: list[str] = []
-    volumes.append(f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud")
-    volumes.append(f"{workspace_dir}:/workspace")
-
-    claudebox_container = QuadletContainer(
-            Filepath=output_dir / Path(f"{container_name}.container"),
-            Unit=QuadletSectionUnit(
-                Description=f"claudebox container {workspace_dir.name}",
-                Before=[],
-                After=[],
-            ),
-            Container=QuadletSectionContainer(
-                Image=claudebox_config.get("image", ""),
-                ContainerName=container_name,
-                Pod=f"{pod_name}.pod",
-                Exec="/sbin/init",
-                Pull="never",
-                SecurityLabelDisable=True,
-                Mounts=[*skill_mounts, *agent_mounts],
-                Volumes=volumes,
-            ),
-            Install=QuadletSectionInstall(
-                WantedBy=[]
-            )
-        )
-
-    with open(pod.Filepath, "w") as f:
-        f.write(pod.serialize())
-    with open(claudebox_container.Filepath, "w") as f:
-        f.write(claudebox_container.serialize())
-    run_cmd_with_error_handler(["systemctl", "--user", "daemon-reload"], [], "Failed to reload daemon and generate quadlet services")
-
+    if args.mode == "systemd":
+        pod, containers = build_from_config(merged_config, workspace_dir, output_dir)
+        claudebox_container = containers[0]
+        with open(pod.Filepath, "w") as f:
+            f.write(pod.serialize())
+        with open(claudebox_container.Filepath, "w") as f:
+            f.write(claudebox_container.serialize())
+        run_cmd_with_error_handler(["systemctl", "--user", "daemon-reload"], [], "Failed to reload daemon and generate quadlet services")
+    elif args.mode == "podman":
+        run_claudebox(merged_config, workspace_dir)
+    else:
+        raise NotImplementedError(f"Mode '{args.mode}' not implemented")

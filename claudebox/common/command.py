@@ -37,7 +37,7 @@ class Command:
 
         logger.debug(
             f"Executing of command '{process.args}' finished with result '{process.returncode}',"
-            " stdout '{out}', stderr '{err}'"
+            f" stdout '{out}', stderr '{err}'"
         )
 
         if process.returncode != 0:

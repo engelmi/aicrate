@@ -96,3 +96,68 @@ class QuadletContainer(Serializable):
 {self.Container.serialize()}
 {self.Install.serialize()}
 """
+
+def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tuple[QuadletPod, list[QuadletContainer]]:
+    claudebox_config = config.get("claudebox", {})
+    skills_config = config.get("skills", {})
+    agents_config = config.get("agents", {})
+    mcp_config = config.get("mcp", {})
+
+    pod_name=f"claudebox-{workspace_dir.name}"
+    pod=QuadletPod(
+        Filepath=output_dir / Path(f"{pod_name}.pod"),
+        Unit=QuadletSectionUnit(
+            Description=f"Pod for {pod_name}", 
+            Before=[],
+            After=["network.target"], 
+            ),
+        Pod=QuadletSectionPod(
+            PodName=pod_name,
+        ),
+        Install=QuadletSectionInstall(
+            WantedBy=[]
+        )
+    )
+
+    container_name = f"claudebox-{workspace_dir.name}"
+
+    skill_mounts: list[str] = []
+    for skill in skills_config:
+        name = skill.split("/")[-1].split(":")[0]
+        skill_mounts.append(
+            f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
+        )
+    agent_mounts: list[str] = []
+    for agent in agents_config:
+        name = agent.split("/")[-1].split(":")[0]
+        agent_mounts.append(
+            f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
+        )
+    
+    volumes: list[str] = []
+    volumes.append(f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud")
+    volumes.append(f"{workspace_dir}:/workspace")
+
+    claudebox_container = QuadletContainer(
+            Filepath=output_dir / Path(f"{container_name}.container"),
+            Unit=QuadletSectionUnit(
+                Description=f"claudebox container {workspace_dir.name}",
+                Before=[],
+                After=[],
+            ),
+            Container=QuadletSectionContainer(
+                Image=claudebox_config.get("image", ""),
+                ContainerName=container_name,
+                Pod=f"{pod_name}.pod",
+                Exec="/sbin/init",
+                Pull="never",
+                SecurityLabelDisable=True,
+                Mounts=[*skill_mounts, *agent_mounts],
+                Volumes=volumes,
+            ),
+            Install=QuadletSectionInstall(
+                WantedBy=[]
+            )
+        )
+
+    return (pod, [claudebox_container])
