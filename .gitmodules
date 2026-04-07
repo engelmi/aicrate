@@ -7,3 +7,6 @@
 [submodule "submodules/agency"]
 	path = submodules/agency
 	url = git@github.com:msitarzewski/agency-agents.git
+[submodule "submodules/mcp/testing-farm-mcp"]
+	path = submodules/mcp/testing-farm-mcp
+	url = git@github.com:redhat-community-ai-tools/testing-farm-mcp.git

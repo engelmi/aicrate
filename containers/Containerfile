@@ -3,10 +3,11 @@ ARG CLAUDE_CODE_VERSION=latest
 
 FROM quay.io/fedora/fedora:${fedora_version}
 
-# Install Claude
+# Install Claude and other, helpful tools
 RUN dnf upgrade -y && \
     dnf install \
         git \
+        jq \
         npm \
         systemd \
         tree \
