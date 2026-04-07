@@ -47,6 +47,7 @@ class QuadletSectionContainer(Serializable):
     Mounts: list[str]
     Volumes: list[str]
     SecurityLabelDisable: bool
+    EnvVariables: list[str]
 
     def serialize(self):
         mounts: list[str] = []
@@ -55,6 +56,9 @@ class QuadletSectionContainer(Serializable):
         volumes: list[str] = []
         for volume in self.Volumes:
             volumes.append(f"Volume={volume}")
+        env_vars: list[str] = []
+        for var in self.EnvVariables:
+            env_vars.append(f"Environment={var}")
 
         securitylabeldisable = f"{self.SecurityLabelDisable}".lower()
 
@@ -67,6 +71,7 @@ ContainerName={self.ContainerName}
 Pod={self.Pod}
 {'\n'.join(m for m in mounts)}
 {'\n'.join(v for v in volumes)}
+{'\n'.join(var for var in env_vars)}
 SecurityLabelDisable={securitylabeldisable}"""
 
 @dataclass
@@ -101,7 +106,7 @@ def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tu
     claudebox_config = config.get("claudebox", {})
     skills_config = config.get("skills", {})
     agents_config = config.get("agents", {})
-    mcp_config = config.get("mcp", {})
+    mcp_config = config.get("mcp", [])
 
     pod_name=f"claudebox-{workspace_dir.name}"
     pod=QuadletPod(
@@ -154,10 +159,42 @@ def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tu
                 SecurityLabelDisable=True,
                 Mounts=[*skill_mounts, *agent_mounts],
                 Volumes=volumes,
+                EnvVariables=[],
             ),
             Install=QuadletSectionInstall(
                 WantedBy=[]
             )
         )
 
-    return (pod, [claudebox_container])
+    mcp_container: list[QuadletContainer] = []
+    for mcp in mcp_config:
+        image: str = mcp.get("image", "")
+        mcp_name = image.rsplit("/", 1)[1].split(":")[0]
+        env_vars: list[str] = mcp.get("env", [])
+
+        mcp_container.append(
+            QuadletContainer(
+                Filepath=output_dir / Path(f"{mcp_name}.container"),
+                Unit=QuadletSectionUnit(
+                    Description=f"MCP server container for {mcp_name}",
+                    Before=[],
+                    After=[],
+                ),
+                Container=QuadletSectionContainer(
+                    Image=image,
+                    ContainerName=mcp_name,
+                    Pod=f"{pod_name}.pod",
+                    Exec="",
+                    Pull="never",
+                    SecurityLabelDisable=True,
+                    Mounts=[],
+                    Volumes=[],
+                    EnvVariables=[f"{k}={v}" for entry in env_vars for k, v in entry.items()],
+                ),
+                Install=QuadletSectionInstall(
+                    WantedBy=[]
+                )
+            )
+        )
+
+    return (pod, [claudebox_container, *mcp_container])

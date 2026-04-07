@@ -130,11 +130,11 @@ def cli_run(args: argparse.Namespace):
     
     if args.mode == "systemd":
         pod, containers = build_from_config(merged_config, workspace_dir, output_dir)
-        claudebox_container = containers[0]
         with open(pod.Filepath, "w") as f:
             f.write(pod.serialize())
-        with open(claudebox_container.Filepath, "w") as f:
-            f.write(claudebox_container.serialize())
+        for container in containers:
+            with open(container.Filepath, "w") as f:
+                f.write(container.serialize())
         run_cmd_with_error_handler(["systemctl", "--user", "daemon-reload"], [], "Failed to reload daemon and generate quadlet services")
     elif args.mode == "podman":
         run_claudebox(merged_config, workspace_dir)
