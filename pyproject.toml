@@ -1,0 +1,48 @@
+[build-system]
+requires = ["wheel", "setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+exclude = ["tests*", "assets*", "scripts*"]
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+script-files = ["claudebox/claude-box"]
+
+[project]
+name="claude-box"
+version="0.1.0"
+description="Python tool for setting up isolated claude environments"
+readme="README.md"
+authors=[
+    { name = "Michael Engel", email = "mengel@redhat.com" },
+]
+classifiers=[
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords=['AI', 'claude', 'AI skills', 'AI agents', 'MCP server', 'Python']
+requires-python='>=3.9'
+dependencies=[]
+
+[project.optional-dependencies]
+dev = [
+    "black~=25.1.0",
+    "isort~=6.0.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/engelmi/claude-box"
+Documentation = "https://github.com/engelmi/claude-box"
+Repository = "https://github.com/engelmi/claude-box"
+Issues = "https://github.com/engelmi/claude-box"
+
+
+[tool.flake8]
+max-line-length = 120
+exclude = ["venv", ".venv"]
+ignore = ["F401"]
+
+[tool.mypy]
+python_version = 3.9

@@ -1,10 +1,12 @@
 from abc import ABC
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+
 
 class Serializable(ABC):
 
     def serialize(self) -> str: ...
+
 
 @dataclass
 class QuadletSectionUnit(Serializable):
@@ -19,6 +21,7 @@ Description={self.Description}
 Before={' '.join(b for b in self.Before)}
 After={' '.join(a for a in self.After)}"""
 
+
 @dataclass
 class QuadletSectionInstall(Serializable):
     WantedBy: list[str]
@@ -28,6 +31,7 @@ class QuadletSectionInstall(Serializable):
 [Install]
 WantedBy={' '.join(w for w in self.WantedBy)}"""
 
+
 @dataclass
 class QuadletSectionPod(Serializable):
     PodName: str
@@ -36,6 +40,7 @@ class QuadletSectionPod(Serializable):
         return f"""
 [Pod]
 PodName={self.PodName}"""
+
 
 @dataclass
 class QuadletSectionContainer(Serializable):
@@ -74,6 +79,7 @@ Pod={self.Pod}
 {'\n'.join(var for var in env_vars)}
 SecurityLabelDisable={securitylabeldisable}"""
 
+
 @dataclass
 class QuadletPod(Serializable):
     Filepath: Path
@@ -87,7 +93,8 @@ class QuadletPod(Serializable):
 {self.Pod.serialize()}
 {self.Install.serialize()}
 """
-    
+
+
 @dataclass
 class QuadletContainer(Serializable):
     Filepath: Path
@@ -102,26 +109,27 @@ class QuadletContainer(Serializable):
 {self.Install.serialize()}
 """
 
-def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tuple[QuadletPod, list[QuadletContainer]]:
+
+def build_from_config(
+    config: dict, workspace_dir: Path, output_dir: Path
+) -> tuple[QuadletPod, list[QuadletContainer]]:
     claudebox_config = config.get("claudebox", {})
     skills_config = config.get("skills", {})
     agents_config = config.get("agents", {})
     mcp_config = config.get("mcp", [])
 
-    pod_name=f"claudebox-{workspace_dir.name}"
-    pod=QuadletPod(
+    pod_name = f"claudebox-{workspace_dir.name}"
+    pod = QuadletPod(
         Filepath=output_dir / Path(f"{pod_name}.pod"),
         Unit=QuadletSectionUnit(
-            Description=f"Pod for {pod_name}", 
+            Description=f"Pod for {pod_name}",
             Before=[],
-            After=["network.target"], 
-            ),
+            After=["network.target"],
+        ),
         Pod=QuadletSectionPod(
             PodName=pod_name,
         ),
-        Install=QuadletSectionInstall(
-            WantedBy=[]
-        )
+        Install=QuadletSectionInstall(WantedBy=[]),
     )
 
     container_name = f"claudebox-{workspace_dir.name}"
@@ -138,33 +146,33 @@ def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tu
         agent_mounts.append(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
         )
-    
+
     volumes: list[str] = []
-    volumes.append(f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud")
+    volumes.append(
+        f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
+    )
     volumes.append(f"{workspace_dir}:/workspace")
 
     claudebox_container = QuadletContainer(
-            Filepath=output_dir / Path(f"{container_name}.container"),
-            Unit=QuadletSectionUnit(
-                Description=f"claudebox container {workspace_dir.name}",
-                Before=[],
-                After=[],
-            ),
-            Container=QuadletSectionContainer(
-                Image=claudebox_config.get("image", ""),
-                ContainerName=container_name,
-                Pod=f"{pod_name}.pod",
-                Exec="/sbin/init",
-                Pull="never",
-                SecurityLabelDisable=True,
-                Mounts=[*skill_mounts, *agent_mounts],
-                Volumes=volumes,
-                EnvVariables=[],
-            ),
-            Install=QuadletSectionInstall(
-                WantedBy=[]
-            )
-        )
+        Filepath=output_dir / Path(f"{container_name}.container"),
+        Unit=QuadletSectionUnit(
+            Description=f"claudebox container {workspace_dir.name}",
+            Before=[],
+            After=[],
+        ),
+        Container=QuadletSectionContainer(
+            Image=claudebox_config.get("image", ""),
+            ContainerName=container_name,
+            Pod=f"{pod_name}.pod",
+            Exec="/sbin/init",
+            Pull="never",
+            SecurityLabelDisable=True,
+            Mounts=[*skill_mounts, *agent_mounts],
+            Volumes=volumes,
+            EnvVariables=[],
+        ),
+        Install=QuadletSectionInstall(WantedBy=[]),
+    )
 
     mcp_container: list[QuadletContainer] = []
     for mcp in mcp_config:
@@ -189,11 +197,11 @@ def build_from_config(config: dict, workspace_dir: Path, output_dir: Path) -> tu
                     SecurityLabelDisable=True,
                     Mounts=[],
                     Volumes=[],
-                    EnvVariables=[f"{k}={v}" for entry in env_vars for k, v in entry.items()],
+                    EnvVariables=[
+                        f"{k}={v}" for entry in env_vars for k, v in entry.items()
+                    ],
                 ),
-                Install=QuadletSectionInstall(
-                    WantedBy=[]
-                )
+                Install=QuadletSectionInstall(WantedBy=[]),
             )
         )
 

@@ -1,16 +1,17 @@
-import os
+import argparse
 import json
-import yaml
+import os
 from pathlib import Path
 from typing import Sequence, Tuple
-import argparse
 
-from claudebox.version import version
-from claudebox.logger import LogLevel, logger
-from claudebox.common.ds import deep_merge
+import yaml
+
 from claudebox.common.command import run_cmd_with_error_handler
-from claudebox.systemd.quadlet import build_from_config
+from claudebox.common.ds import deep_merge
 from claudebox.engine import run_claudebox
+from claudebox.logger import LogLevel, logger
+from claudebox.systemd.quadlet import build_from_config
+from claudebox.version import version
 
 
 def parse_log_level_option(option: str) -> LogLevel:
@@ -40,7 +41,6 @@ def parse_arguments(
         help="Path to the log file. If not given, logs will be printed to stderr.",
     )
 
-
     subparsers = parser.add_subparsers(dest="subcommand")
     subparsers.required = False
 
@@ -50,17 +50,13 @@ def parse_arguments(
 
 
 def add_run_parser(parent_parser: argparse._SubParsersAction):
-    init_parser = parent_parser.add_parser(
-        "run", help="Run a new claudebox"
-    )
+    init_parser = parent_parser.add_parser("run", help="Run a new claudebox")
     init_parser.set_defaults(func=cli_run)
 
     init_parser.add_argument(
         "--config",
         "-c",
-        help=(
-            "Configuration of claudebox to use."
-        ),
+        help=("Configuration of claudebox to use."),
         dest="config",
         type=str,
         default="/home/mengel/projects/engelmi/claude-box/claudebox/claudebox.conf.yml",
@@ -68,14 +64,12 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
     init_parser.add_argument(
         "--mode",
         "-m",
-        help=(
-            "The mode how to run claudebox"
-        ),
+        help=("The mode how to run claudebox"),
         dest="mode",
         choices=["systemd", "podman"],
         default="podman",
     )
-    
+
     init_parser.add_argument(
         "--workspace",
         "-w",
@@ -89,9 +83,7 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
     init_parser.add_argument(
         "--output-dir",
         "-o",
-        help=(
-            "The directory to write the generated quadlet files to"
-        ),
+        help=("The directory to write the generated quadlet files to"),
         dest="output_dir",
         type=str,
         default="~/.config/containers/systemd",
@@ -122,12 +114,14 @@ def cli_run(args: argparse.Namespace):
     merged_config = dict()
     for key, value in config.get("default", {}).items():
         merged_config[key] = value
-    
+
     if args.workspace in config:
         merged_config = deep_merge(merged_config, config.get(args.workspace, {}))
 
-    logger.debug(f"Merged claudebox config for workspace {workspace_dir}:\n{json.dumps(merged_config, indent=2, sort_keys=True)}")
-    
+    logger.debug(
+        f"Merged claudebox config for workspace {workspace_dir}:\n{json.dumps(merged_config, indent=2, sort_keys=True)}"
+    )
+
     if args.mode == "systemd":
         pod, containers = build_from_config(merged_config, workspace_dir, output_dir)
         with open(pod.Filepath, "w") as f:
@@ -135,7 +129,11 @@ def cli_run(args: argparse.Namespace):
         for container in containers:
             with open(container.Filepath, "w") as f:
                 f.write(container.serialize())
-        run_cmd_with_error_handler(["systemctl", "--user", "daemon-reload"], [], "Failed to reload daemon and generate quadlet services")
+        run_cmd_with_error_handler(
+            ["systemctl", "--user", "daemon-reload"],
+            [],
+            "Failed to reload daemon and generate quadlet services",
+        )
     elif args.mode == "podman":
         run_claudebox(merged_config, workspace_dir)
     else:

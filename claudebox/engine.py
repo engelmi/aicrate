@@ -1,8 +1,9 @@
 import pty
 from pathlib import Path
 
-from claudebox.common.command import run_cmd_with_error_handler
 from claudebox.claude import ClaudeJSON, MCPServer
+from claudebox.common.command import run_cmd_with_error_handler
+
 
 def run_claudebox(config: dict, workspace_dir: Path):
     claudebox_config = config.get("claudebox", {})
@@ -10,9 +11,18 @@ def run_claudebox(config: dict, workspace_dir: Path):
     agents_config = config.get("agents", {})
     mcp_config = config.get("mcp", {})
 
-    pod_name=f"claudebox-{workspace_dir.name}"
+    pod_name = f"claudebox-{workspace_dir.name}"
     create_pod_cmd = [
-        "podman", "pod", "create", "--replace", "--exit-policy", "stop", "--infra-name", f"{pod_name}-infra", "--name", pod_name, 
+        "podman",
+        "pod",
+        "create",
+        "--replace",
+        "--exit-policy",
+        "stop",
+        "--infra-name",
+        f"{pod_name}-infra",
+        "--name",
+        pod_name,
     ]
 
     box_container_name = f"claudebox-{workspace_dir.name}"
@@ -29,11 +39,25 @@ def run_claudebox(config: dict, workspace_dir: Path):
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
         )
     volumes: list[str] = []
-    volumes.append(f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud")
+    volumes.append(
+        f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
+    )
     volumes.append(f"{workspace_dir}:/workspace")
 
     create_container_claude_box_cmd = [
-        "podman", "run", "--name", box_container_name, "--replace", "--rm", "--pull", "never", "-d", "--security-opt", "label=disable", "--pod", pod_name
+        "podman",
+        "run",
+        "--name",
+        box_container_name,
+        "--replace",
+        "--rm",
+        "--pull",
+        "never",
+        "-d",
+        "--security-opt",
+        "label=disable",
+        "--pod",
+        pod_name,
     ]
     for volume in volumes:
         create_container_claude_box_cmd.extend(["-v", volume])
@@ -41,11 +65,19 @@ def run_claudebox(config: dict, workspace_dir: Path):
         create_container_claude_box_cmd.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
         create_container_claude_box_cmd.extend(["--mount", agent_mount])
-    create_container_claude_box_cmd.extend([claudebox_config.get("image", ""), "/sbin/init"])
+    create_container_claude_box_cmd.extend(
+        [claudebox_config.get("image", ""), "/sbin/init"]
+    )
 
     # exec into claude-box container
     exec_into_claude_box_cmd = [
-        "podman", "exec", "-it", "--workdir", "/workspace", box_container_name, "/bin/bash"
+        "podman",
+        "exec",
+        "-it",
+        "--workdir",
+        "/workspace",
+        box_container_name,
+        "/bin/bash",
     ]
 
     mcp_servers_in_config: list[MCPServer] = []
@@ -55,36 +87,68 @@ def run_claudebox(config: dict, workspace_dir: Path):
         mcp_name = image.rsplit("/", 1)[1].split(":")[0]
         env_vars: list[str] = mcp.get("env", [])
         cmd = [
-            "podman", "run", "--name", f"{mcp_name}-{workspace_dir.name}", "--replace", "--rm", "--pull", "never", "-d", "--security-opt", "label=disable", "--pod", pod_name
+            "podman",
+            "run",
+            "--name",
+            f"{mcp_name}-{workspace_dir.name}",
+            "--replace",
+            "--rm",
+            "--pull",
+            "never",
+            "-d",
+            "--security-opt",
+            "label=disable",
+            "--pod",
+            pod_name,
         ]
         for env_var in env_vars:
             for k, v in env_var.items():
                 cmd.extend(["--env", f"{k}={v}"])
         cmd.append(image)
-        
+
         create_mcp_container_cmds[mcp_name] = cmd
 
         port = mcp.get("port", "")
-        mcp_servers_in_config.append(MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{port}/sse"))
-
+        mcp_servers_in_config.append(
+            MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{port}/sse")
+        )
 
     run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create claudebox pod")
 
-    run_cmd_with_error_handler(create_container_claude_box_cmd, [], "Failed to create claudebox container")
+    run_cmd_with_error_handler(
+        create_container_claude_box_cmd, [], "Failed to create claudebox container"
+    )
     claude_json = ClaudeJSON(mcp_servers_in_config).to_config()
-    create_claude_json_cmd = ["podman", "exec", box_container_name, "sh", "-c", f"""cat > /root/.claude.json << \"EOF\"\n{claude_json}\nEOF"""]
-    run_cmd_with_error_handler(create_claude_json_cmd, [], "Failed to create initial .claude.json")
+    create_claude_json_cmd = [
+        "podman",
+        "exec",
+        box_container_name,
+        "sh",
+        "-c",
+        f"""cat > /root/.claude.json << \"EOF\"\n{claude_json}\nEOF""",
+    ]
+    run_cmd_with_error_handler(
+        create_claude_json_cmd, [], "Failed to create initial .claude.json"
+    )
 
     for name, cmd in create_mcp_container_cmds.items():
-        run_cmd_with_error_handler(cmd, [], f"Failed to create MCP server container {name}")
+        run_cmd_with_error_handler(
+            cmd, [], f"Failed to create MCP server container {name}"
+        )
 
     try:
         pty.spawn(exec_into_claude_box_cmd)
     finally:
-        run_cmd_with_error_handler(["podman", "stop", pod_name], [], f"Failed to stop {pod_name}")
+        run_cmd_with_error_handler(
+            ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"
+        )
         for name in create_mcp_container_cmds.keys():
             # do not break on an exception and keep stopping mcp containers
             try:
-                run_cmd_with_error_handler(["podman", "stop", f"{name}-{workspace_dir.name}"], [], f"Failed to stop MCP server {name}")
+                run_cmd_with_error_handler(
+                    ["podman", "stop", f"{name}-{workspace_dir.name}"],
+                    [],
+                    f"Failed to stop MCP server {name}",
+                )
             except Exception:
                 pass
