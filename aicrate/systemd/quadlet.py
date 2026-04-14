@@ -113,12 +113,12 @@ class QuadletContainer(Serializable):
 def build_from_config(
     config: dict, workspace_dir: Path, output_dir: Path
 ) -> tuple[QuadletPod, list[QuadletContainer]]:
-    claudebox_config = config.get("claudebox", {})
+    aicrate_config = config.get("aicrate", {})
     skills_config = config.get("skills", {})
     agents_config = config.get("agents", {})
     mcp_config = config.get("mcp", [])
 
-    pod_name = f"claudebox-{workspace_dir.name}"
+    pod_name = f"aicrate-{workspace_dir.name}"
     pod = QuadletPod(
         Filepath=output_dir / Path(f"{pod_name}.pod"),
         Unit=QuadletSectionUnit(
@@ -132,7 +132,7 @@ def build_from_config(
         Install=QuadletSectionInstall(WantedBy=[]),
     )
 
-    container_name = f"claudebox-{workspace_dir.name}"
+    container_name = f"aicrate-{workspace_dir.name}"
 
     skill_mounts: list[str] = []
     for skill in skills_config:
@@ -153,15 +153,15 @@ def build_from_config(
     )
     volumes.append(f"{workspace_dir}:/workspace")
 
-    claudebox_container = QuadletContainer(
+    aicrate_container = QuadletContainer(
         Filepath=output_dir / Path(f"{container_name}.container"),
         Unit=QuadletSectionUnit(
-            Description=f"claudebox container {workspace_dir.name}",
+            Description=f"aicrate container {workspace_dir.name}",
             Before=[],
             After=[],
         ),
         Container=QuadletSectionContainer(
-            Image=claudebox_config.get("image", ""),
+            Image=aicrate_config.get("image", ""),
             ContainerName=container_name,
             Pod=f"{pod_name}.pod",
             Exec="/sbin/init",
@@ -205,4 +205,4 @@ def build_from_config(
             )
         )
 
-    return (pod, [claudebox_container, *mcp_container])
+    return (pod, [aicrate_container, *mcp_container])

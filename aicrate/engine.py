@@ -1,17 +1,17 @@
 import pty
 from pathlib import Path
 
-from claudebox.claude import ClaudeJSON, MCPServer
-from claudebox.common.command import run_cmd_with_error_handler
+from aicrate.model import ClaudeJSON, MCPServer
+from aicrate.common.command import run_cmd_with_error_handler
 
 
-def run_claudebox(config: dict, workspace_dir: Path):
-    claudebox_config = config.get("claudebox", {})
+def run_aicrate(config: dict, workspace_dir: Path):
+    aicrate_config = config.get("aicrate", {})
     skills_config = config.get("skills", {})
     agents_config = config.get("agents", {})
     mcp_config = config.get("mcp", {})
 
-    pod_name = f"claudebox-{workspace_dir.name}"
+    pod_name = f"aicrate-{workspace_dir.name}"
     create_pod_cmd = [
         "podman",
         "pod",
@@ -25,7 +25,7 @@ def run_claudebox(config: dict, workspace_dir: Path):
         pod_name,
     ]
 
-    box_container_name = f"claudebox-{workspace_dir.name}"
+    box_container_name = f"aicrate-{workspace_dir.name}"
     skill_mounts: list[str] = []
     for skill in skills_config:
         name = skill.split("/")[-1].split(":")[0]
@@ -44,7 +44,7 @@ def run_claudebox(config: dict, workspace_dir: Path):
     )
     volumes.append(f"{workspace_dir}:/workspace")
 
-    create_container_claude_box_cmd = [
+    create_container_cli_box = [
         "podman",
         "run",
         "--name",
@@ -60,17 +60,17 @@ def run_claudebox(config: dict, workspace_dir: Path):
         pod_name,
     ]
     for volume in volumes:
-        create_container_claude_box_cmd.extend(["-v", volume])
+        create_container_cli_box.extend(["-v", volume])
     for skill_mount in skill_mounts:
-        create_container_claude_box_cmd.extend(["--mount", skill_mount])
+        create_container_cli_box.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
-        create_container_claude_box_cmd.extend(["--mount", agent_mount])
-    create_container_claude_box_cmd.extend(
-        [claudebox_config.get("image", ""), "/sbin/init"]
+        create_container_cli_box.extend(["--mount", agent_mount])
+    create_container_cli_box.extend(
+        [aicrate_config.get("image", ""), "/sbin/init"]
     )
 
-    # exec into claude-box container
-    exec_into_claude_box_cmd = [
+    # exec into aicrate container
+    exec_into_cli_box_cmd = [
         "podman",
         "exec",
         "-it",
@@ -113,10 +113,10 @@ def run_claudebox(config: dict, workspace_dir: Path):
             MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{port}/sse")
         )
 
-    run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create claudebox pod")
+    run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create aicrate pod")
 
     run_cmd_with_error_handler(
-        create_container_claude_box_cmd, [], "Failed to create claudebox container"
+        create_container_cli_box, [], "Failed to create aicrate container"
     )
     claude_json = ClaudeJSON(mcp_servers_in_config).to_config()
     create_claude_json_cmd = [
@@ -137,7 +137,7 @@ def run_claudebox(config: dict, workspace_dir: Path):
         )
 
     try:
-        pty.spawn(exec_into_claude_box_cmd)
+        pty.spawn(exec_into_cli_box_cmd)
     finally:
         run_cmd_with_error_handler(
             ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"

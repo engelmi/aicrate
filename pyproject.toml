@@ -8,12 +8,12 @@ exclude = ["tests*", "assets*", "scripts*"]
 
 [tool.setuptools]
 license-files = ["LICENSE"]
-script-files = ["claudebox/claude-box"]
+script-files = ["aicrate/aicrate"]
 
 [project]
-name="claude-box"
+name="aicrate"
 version="0.1.0"
-description="Python tool for setting up isolated claude environments"
+description="Python tool for setting up isolated AI environments"
 readme="README.md"
 authors=[
     { name = "Michael Engel", email = "mengel@redhat.com" },
@@ -33,10 +33,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/engelmi/claude-box"
-Documentation = "https://github.com/engelmi/claude-box"
-Repository = "https://github.com/engelmi/claude-box"
-Issues = "https://github.com/engelmi/claude-box"
+Homepage = "https://github.com/engelmi/aicrate"
+Documentation = "https://github.com/engelmi/aicrate"
+Repository = "https://github.com/engelmi/aicrate"
+Issues = "https://github.com/engelmi/aicrate"
 
 
 [tool.flake8]

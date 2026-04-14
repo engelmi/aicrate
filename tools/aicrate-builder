@@ -21,7 +21,7 @@ TMP_OUT_ROOT_DIR="${ROOT_DIR}"/out
 
 OCI_REGISTRY="quay.io"
 OCI_ORGANIZATION="rhivos-ai-tools"
-PROJECT_NAME="claude-box"
+PROJECT_NAME="aicrate"
 
 SKILL_ARTIFACT_PREFIX="skill"
 AGENT_ARTIFACT_PREFIX="agent"
@@ -33,7 +33,7 @@ clean() {
 }
 
 #--------------------------------------------------------
-#   claude-box image
+#   aicrate image
 #--------------------------------------------------------
 
 claude() {
@@ -74,7 +74,7 @@ Remove OCI artifacts for skills. By default, OCI artifacts for all
 available skills are removed.
 
 Usage:
-    claude-box-builder skills remove [options]
+    aicrate-builder skills remove [options]
 
 Flags:
     --name      Remove only the skill identified by name
@@ -121,7 +121,7 @@ Build OCI artifacts for skills. By default, OCI artifacts for all
 available skills are built.
 
 Usage:
-    claude-box-builder skills build [options]
+    aicrate-builder skills build [options]
 
 Flags:
     --name      Build only the skill identified by name
@@ -195,8 +195,8 @@ skills(){
 Operations for skills
 
 Usage:
-    claude-box-builder skills [commands]
-    claude-box-builder skills [options]
+    aicrate-builder skills [commands]
+    aicrate-builder skills [options]
 
 Available commands:
     ls          List all available skills
@@ -290,7 +290,7 @@ Remove OCI artifacts for agents. By default, OCI artifacts for all
 available agents are removed.
 
 Usage:
-    claude-box-builder agents remove [options]
+    aicrate-builder agents remove [options]
 
 Flags:
     --category      Remove only the agent identified by category.
@@ -337,7 +337,7 @@ Build OCI artifacts for agents. By default, OCI artifacts for all
 available agents are built.
 
 Usage:
-    claude-box-builder agents build [options]
+    aicrate-builder agents build [options]
 
 Flags:
     --category      Build only the agent identified by category in the form of <provider>/<category>.
@@ -407,8 +407,8 @@ agents(){
 Operations for agents
 
 Usage:
-    claude-box-builder agents [commands]
-    claude-box-builder agents [options]
+    aicrate-builder agents [commands]
+    aicrate-builder agents [options]
 
 Available commands:
     ls          List all available agents
@@ -483,7 +483,7 @@ remove_mcps() {
 Remove OCI images with MCP server.
 
 Usage:
-    claude-box-builder mcps remove [options]
+    aicrate-builder mcps remove [options]
 
 Flags:
     --name (required)   The name of the MCP server to remove
@@ -533,7 +533,7 @@ build_mcps() {
 Build OCI images with MCP server.
 
 Usage:
-    claude-box-builder mcps build [options]
+    aicrate-builder mcps build [options]
 
 Flags:
     --name (required)   Build only the MCP server identified by name
@@ -587,8 +587,8 @@ mcps(){
 Operations for MCP servers
 
 Usage:
-    claude-box-builder mcps [commands]
-    claude-box-builder mcps [options]
+    aicrate-builder mcps [commands]
+    aicrate-builder mcps [options]
 
 Available commands:
     ls          List all available mcps
@@ -633,17 +633,15 @@ EOF
     $COMMAND "$@"
 }
 
-#
-#
-#
 
 BASIC_USAGE=$(cat <<'EOF'
 CLI to build OCI artifacts for skills and agents
 
 Usage:
-    claude-box-builder [command]
+    aicrate-builder [command]
 
 Available commands:
+    claude      Build OCI image with claude CLI setup
     skills      Build OCI artifacts for skills
     agents      Build OCI artifacts for agents
     mcps        Build OCI image for MCP servers

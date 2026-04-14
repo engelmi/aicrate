@@ -6,7 +6,7 @@ if [ -z "${MOUNT_DIR}" ]; then
     MOUNT_DIR="${CURR_DIR}"
 fi
 NAME=$(basename "${MOUNT_DIR}")
-CONTAINER_NAME=claude-box-"${NAME}"
+CONTAINER_NAME=aicrate-"${NAME}"
 
 stop_container() {
     podman stop "${CONTAINER_NAME}" &> /dev/null
@@ -23,6 +23,6 @@ podman run -d \
     -v "${MOUNT_DIR}":/workspace \
     --mount=type=artifact,src=quay.io/rhivos-skills/xlsx:latest,dst=/var/oci-artifacts/skills/xlsx \
     --mount=type=artifact,src=quay.io/rhivos-skills/docx:latest,dst=/var/oci-artifacts/skills/docx \
-    quay.io/rhivos-ai-tools/claude-box:latest /sbin/init
+    quay.io/rhivos-ai-tools/aicrate:latest /sbin/init
 
 podman exec -it -w /workspace "${CONTAINER_NAME}" /bin/bash

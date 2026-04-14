@@ -2,8 +2,8 @@ import sys
 import traceback
 from typing import Sequence
 
-from claudebox.cli import parse_arguments
-from claudebox.logger import LogLevel, configure_logger, logger
+from aicrate.cli import parse_arguments
+from aicrate.logger import LogLevel, configure_logger, logger
 
 
 def main(args: Sequence[str] = None):
@@ -18,7 +18,7 @@ def main(args: Sequence[str] = None):
 
         cli_args.func(cli_args)
     except Exception as ex:
-        logger.error(f"Running claudebox failed: {ex}")
+        logger.error(f"Running aicrate failed: {ex}")
         if logger.level == LogLevel.DEBUG:
             traceback.print_exc()
         sys.exit(1)

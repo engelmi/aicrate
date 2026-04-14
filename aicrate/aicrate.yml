@@ -1,6 +1,6 @@
 default:
-  claudebox:
-    image: quay.io/rhivos-ai-tools/claude-box:latest
+  aicrate:
+    image: quay.io/rhivos-ai-tools/aicrate:latest
     workspace: ~/
   skills:
     - quay.io/rhivos-ai-tools/skill-algorithmic-art:latest
@@ -52,5 +52,5 @@ default:
       # envfile: /home/mengel/xyz.env
 
 "/home/mengel/projects/centos-auto/selcraft":
-  claudebox:
+  aicrate:
     workspace: /home/mengel/projects/centos-auto/selcraft

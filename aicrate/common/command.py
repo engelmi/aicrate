@@ -1,7 +1,7 @@
 import subprocess
 from typing import Union
 
-from claudebox.logger import logger
+from aicrate.logger import logger
 
 
 class ExecutionError(Exception):

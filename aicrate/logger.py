@@ -28,7 +28,7 @@ class LogLevel(IntEnum):
         )
 
 
-logger = logging.getLogger("claudebox")
+logger = logging.getLogger("aicrate")
 
 
 def configure_logger(

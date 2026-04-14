@@ -6,12 +6,12 @@ from typing import Sequence, Tuple
 
 import yaml
 
-from claudebox.common.command import run_cmd_with_error_handler
-from claudebox.common.ds import deep_merge
-from claudebox.engine import run_claudebox
-from claudebox.logger import LogLevel, logger
-from claudebox.systemd.quadlet import build_from_config
-from claudebox.version import version
+from aicrate.common.command import run_cmd_with_error_handler
+from aicrate.common.ds import deep_merge
+from aicrate.engine import run_aicrate
+from aicrate.logger import LogLevel, logger
+from aicrate.systemd.quadlet import build_from_config
+from aicrate.version import version
 
 
 def parse_log_level_option(option: str) -> LogLevel:
@@ -22,7 +22,7 @@ def parse_arguments(
     args: Sequence[str] = None,
 ) -> Tuple[argparse.Namespace, argparse.ArgumentParser]:
     parser = argparse.ArgumentParser(
-        description="claudebox - containerize your AI agent",
+        description="aicrate - containerize your AI agent",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
@@ -50,21 +50,21 @@ def parse_arguments(
 
 
 def add_run_parser(parent_parser: argparse._SubParsersAction):
-    init_parser = parent_parser.add_parser("run", help="Run a new claudebox")
+    init_parser = parent_parser.add_parser("run", help="Run a new aicrate")
     init_parser.set_defaults(func=cli_run)
 
     init_parser.add_argument(
         "--config",
         "-c",
-        help=("Configuration of claudebox to use."),
+        help=("Configuration of aicrate to use."),
         dest="config",
         type=str,
-        default="/home/mengel/projects/engelmi/claude-box/claudebox/claudebox.conf.yml",
+        default="/home/mengel/projects/engelmi/aicrate/aicrate/aicrate.conf.yml",
     )
     init_parser.add_argument(
         "--mode",
         "-m",
-        help=("The mode how to run claudebox"),
+        help=("The mode how to run aicrate"),
         dest="mode",
         choices=["systemd", "podman"],
         default="podman",
@@ -74,7 +74,7 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         "--workspace",
         "-w",
         help=(
-            "The directory on the host which gets mounted into claudebox as workspace."
+            "The directory on the host which gets mounted into aicrate as workspace."
         ),
         dest="workspace",
         type=str,
@@ -119,7 +119,7 @@ def cli_run(args: argparse.Namespace):
         merged_config = deep_merge(merged_config, config.get(args.workspace, {}))
 
     logger.debug(
-        f"Merged claudebox config for workspace {workspace_dir}:\n{json.dumps(merged_config, indent=2, sort_keys=True)}"
+        f"Merged aicrate config for workspace {workspace_dir}:\n{json.dumps(merged_config, indent=2, sort_keys=True)}"
     )
 
     if args.mode == "systemd":
@@ -135,6 +135,6 @@ def cli_run(args: argparse.Namespace):
             "Failed to reload daemon and generate quadlet services",
         )
     elif args.mode == "podman":
-        run_claudebox(merged_config, workspace_dir)
+        run_aicrate(merged_config, workspace_dir)
     else:
         raise NotImplementedError(f"Mode '{args.mode}' not implemented")

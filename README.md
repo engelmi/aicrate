@@ -1,1 +1,1 @@
-# claude-box
+# aicrate
