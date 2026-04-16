@@ -43,14 +43,8 @@ default:
     - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
       port: 8081
       env:
-        # - TESTING_FARM_API_TOKEN: 
         - TESTING_FARM_API_URL: https://api.testing-farm.io/v0.1
         - TESTING_FARM_ARTIFACTS_URL: https://artifacts.osci.redhat.com/testing-farm
         - MCP_TRANSPORT: sse
         - MCP_PORT: 8081
         - MCP_HOST: 127.0.0.1
-      # envfile: /home/mengel/xyz.env
-
-"/home/mengel/projects/centos-auto/selcraft":
-  aicrate:
-    workspace: /home/mengel/projects/centos-auto/selcraft
