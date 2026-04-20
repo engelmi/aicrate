@@ -1,5 +1,5 @@
 import subprocess
-from typing import Union
+from typing import Optional, Union
 
 from aicrate.logger import logger
 
@@ -55,3 +55,16 @@ def run_cmd_with_error_handler(
     except ExecutionError as ex:
         logger.error(error_msg)
         raise ex
+
+
+def run_cmd(
+    args: list[str],
+    inputs: list[str],
+    supress_error: bool = False,
+) -> Optional[str]:
+    try:
+        cmd = Command(args=args)
+        return cmd.run(inputs)
+    except ExecutionError as ex:
+        if not supress_error:
+            raise ex

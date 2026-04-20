@@ -2,6 +2,7 @@ import argparse
 import shutil
 from pathlib import Path
 
+from aicrate.commands.consts import ArtifactTypeAgentManifest, ArtifactTypeSkillManifest
 from aicrate.common.command import run_cmd_with_error_handler
 
 TMP_BUILD_DIR = Path("/var/tmp/aicrate")
@@ -18,6 +19,7 @@ def build_agent(args: argparse.Namespace):
         tag_registry=args.tag_registry,
         tag_organization=args.tag_organization,
         tag_version=args.tag_version,
+        artifact_type=ArtifactTypeAgentManifest,
     )
 
 
@@ -27,6 +29,7 @@ def build_skill(args: argparse.Namespace):
         tag_registry=args.tag_registry,
         tag_organization=args.tag_organization,
         tag_version=args.tag_version,
+        artifact_type=ArtifactTypeSkillManifest,
     )
 
 
@@ -35,6 +38,7 @@ def build_artifact(
     tag_registry: str,
     tag_organization: str,
     tag_version: str,
+    artifact_type: str,
 ):
     # Create temporary directory to store temporary tarballs in
     TMP_BUILD_DIR.mkdir(mode=0o766, parents=True, exist_ok=True)
@@ -60,7 +64,16 @@ def build_artifact(
         f"Failed to build temporary tarball for artifact '{artifact_dir}'",
     )
     run_cmd_with_error_handler(
-        ["podman", "artifact", "add", "--replace", artifact_tag, tmp_tarball],
+        [
+            "podman",
+            "artifact",
+            "add",
+            "--replace",
+            artifact_tag,
+            tmp_tarball,
+            "--type",
+            artifact_type,
+        ],
         [],
         f"Failed to build OCI artifact from tarball '{tmp_tarball}'",
     )

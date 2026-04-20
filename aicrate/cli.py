@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from aicrate.commands import build, run
+from aicrate.commands import build, list, run
 from aicrate.logger import LogLevel
 from aicrate.version import version
 
@@ -40,6 +40,7 @@ def parse_arguments(
 
     add_run_parser(subparsers)
     add_build_parser(subparsers)
+    add_list_parser(subparsers)
 
     return parser.parse_args(args), parser
 
@@ -150,3 +151,10 @@ def add_build_prune_parser(parent_parser: argparse._SubParsersAction):
         "prune", help="Prune all temporary build artifacts"
     )
     build_agent_parser.set_defaults(func=build.prune)
+
+
+def add_list_parser(parent_parser: argparse._SubParsersAction):
+    build_parser = parent_parser.add_parser(
+        "list", aliases=["ls"], help="List OCI artifacts"
+    )
+    build_parser.set_defaults(func=list.list)
