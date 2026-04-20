@@ -2,7 +2,7 @@ import sys
 import traceback
 from typing import Sequence
 
-from aicrate.cli.cli import parse_arguments
+from aicrate.cli import parse_arguments
 from aicrate.logger import LogLevel, configure_logger, logger
 
 
