@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from aicrate.commands import run
+from aicrate.commands import build, run
 from aicrate.logger import LogLevel
 from aicrate.version import version
 
@@ -39,13 +39,14 @@ def parse_arguments(
     subparsers.required = False
 
     add_run_parser(subparsers)
+    add_build_parser(subparsers)
 
     return parser.parse_args(args), parser
 
 
 def add_run_parser(parent_parser: argparse._SubParsersAction):
     run_parser = parent_parser.add_parser("run", help="Run a new aicrate")
-    run_parser.set_defaults(func=run.do)
+    run_parser.set_defaults(func=run.run)
 
     run_parser.add_argument(
         "--config",
@@ -82,3 +83,70 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         type=str,
         default="~/.config/containers/systemd",
     )
+
+
+def add_build_parser(parent_parser: argparse._SubParsersAction):
+    build_parser = parent_parser.add_parser(
+        "build", help="Build an OCI artifact for skills or agents"
+    )
+    build_parser.set_defaults(func=lambda _: build_parser.print_help())
+
+    subparsers = build_parser.add_subparsers(dest="build_subcommand")
+    add_build_skill_parser(subparsers)
+    add_build_agent_parser(subparsers)
+    add_build_prune_parser(subparsers)
+
+
+def _add_artifact_parser_arguments(parser):
+    parser.add_argument(
+        "--dir",
+        help=("Directory containing the skill."),
+        dest="dir",
+        type=str,
+        required=True,
+    )
+
+    parser.add_argument(
+        "--oci-tag-registry",
+        help=("Registry part of the tag for the OCI artifact"),
+        dest="tag_registry",
+        type=str,
+        default="quay.io",
+    )
+    parser.add_argument(
+        "--oci-tag-organization",
+        help=("Organization part of the tag for the OCI artifact"),
+        dest="tag_organization",
+        type=str,
+        default="aicrate",
+    )
+    parser.add_argument(
+        "--oci-tag-version",
+        help=("Version part of the tag for the OCI artifact"),
+        dest="tag_version",
+        type=str,
+        default="latest",
+    )
+
+
+def add_build_skill_parser(parent_parser: argparse._SubParsersAction):
+    build_skill_parser = parent_parser.add_parser(
+        "skill", help="Build an OCI artifact from a skill"
+    )
+    build_skill_parser.set_defaults(func=build.build_skill)
+    _add_artifact_parser_arguments(build_skill_parser)
+
+
+def add_build_agent_parser(parent_parser: argparse._SubParsersAction):
+    build_agent_parser = parent_parser.add_parser(
+        "agent", help="Build an OCI artifact from an agent"
+    )
+    build_agent_parser.set_defaults(func=build.build_agent)
+    _add_artifact_parser_arguments(build_agent_parser)
+
+
+def add_build_prune_parser(parent_parser: argparse._SubParsersAction):
+    build_agent_parser = parent_parser.add_parser(
+        "prune", help="Prune all temporary build artifacts"
+    )
+    build_agent_parser.set_defaults(func=build.prune)

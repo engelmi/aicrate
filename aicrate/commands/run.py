@@ -10,7 +10,7 @@ from aicrate.logger import logger
 from aicrate.quadlet import build_from_config
 
 
-def do(args: argparse.Namespace):
+def run(args: argparse.Namespace):
     config_file = Path(args.config)
     workspace_dir = Path(args.workspace).expanduser().resolve()
     output_dir = Path(args.output_dir).expanduser().resolve()
