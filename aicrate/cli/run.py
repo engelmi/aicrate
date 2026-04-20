@@ -2,51 +2,13 @@ import argparse
 import json
 import os
 from pathlib import Path
-from typing import Sequence, Tuple
-
-import yaml
 
 from aicrate.common.command import run_cmd_with_error_handler
 from aicrate.common.ds import deep_merge
+from aicrate.common.file import load_file
 from aicrate.engine import run_aicrate
-from aicrate.logger import LogLevel, logger
+from aicrate.logger import logger
 from aicrate.systemd.quadlet import build_from_config
-from aicrate.version import version
-
-
-def parse_log_level_option(option: str) -> LogLevel:
-    return LogLevel.from_string(option)
-
-
-def parse_arguments(
-    args: Sequence[str] = None,
-) -> Tuple[argparse.Namespace, argparse.ArgumentParser]:
-    parser = argparse.ArgumentParser(
-        description="aicrate - containerize your AI agent",
-        formatter_class=argparse.RawTextHelpFormatter,
-    )
-
-    parser.add_argument("--version", action="version", version=version())
-    parser.add_argument(
-        "--log-level",
-        dest="log_level",
-        default=LogLevel.INFO,
-        type=parse_log_level_option,
-        help="Set log level used by the application",
-    )
-    parser.add_argument(
-        "--log-file",
-        dest="log_file",
-        type=Path,
-        help="Path to the log file. If not given, logs will be printed to stderr.",
-    )
-
-    subparsers = parser.add_subparsers(dest="subcommand")
-    subparsers.required = False
-
-    add_run_parser(subparsers)
-
-    return parser.parse_args(args), parser
 
 
 def add_run_parser(parent_parser: argparse._SubParsersAction):
@@ -88,19 +50,6 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         type=str,
         default="~/.config/containers/systemd",
     )
-
-
-def load_file(path: Path) -> dict:
-    if not path.exists():
-        raise FileNotFoundError(f"File '{path}' not found")
-
-    with open(path, "r") as f:
-        if path.suffix == ".json":
-            return json.load(f)
-        elif path.suffix in [".yaml", ".yml"]:
-            return yaml.safe_load(f)
-
-        raise NotImplementedError(f"File extension '{path.suffix}' not supported")
 
 
 def cli_run(args: argparse.Namespace):

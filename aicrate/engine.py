@@ -1,8 +1,8 @@
 import pty
 from pathlib import Path
 
-from aicrate.model import ClaudeJSON, MCPServer
 from aicrate.common.command import run_cmd_with_error_handler
+from aicrate.model import ClaudeJSON, MCPServer
 
 
 def run_aicrate(config: dict, workspace_dir: Path):
@@ -65,9 +65,7 @@ def run_aicrate(config: dict, workspace_dir: Path):
         create_container_cli_box.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
         create_container_cli_box.extend(["--mount", agent_mount])
-    create_container_cli_box.extend(
-        [aicrate_config.get("image", ""), "/sbin/init"]
-    )
+    create_container_cli_box.extend([aicrate_config.get("image", ""), "/sbin/init"])
 
     # exec into aicrate container
     exec_into_cli_box_cmd = [
