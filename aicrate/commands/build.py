@@ -2,8 +2,14 @@ import argparse
 import shutil
 from pathlib import Path
 
-from aicrate.commands.consts import ArtifactTypeAgentManifest, ArtifactTypeSkillManifest
-from aicrate.common.command import run_cmd_with_error_handler
+from aicrate.commands.consts import (
+    ArtifactAnnotationGitRemote,
+    ArtifactAnnotationGitVersion,
+    ArtifactTypeAgentManifest,
+    ArtifactTypeSkillManifest,
+)
+from aicrate.common.command import run_cmd, run_cmd_with_error_handler
+from aicrate.logger import logger
 
 TMP_BUILD_DIR = Path("/var/tmp/aicrate")
 
@@ -63,6 +69,24 @@ def build_artifact(
         [],
         f"Failed to build temporary tarball for artifact '{artifact_dir}'",
     )
+
+    git_remote = "N/A"
+    git_version = "N/A"
+    try:
+        version = run_cmd(["git", "-C", artifact_dir.parent, "rev-parse", "HEAD"], [])
+        if version:
+            git_version = version.strip()
+        remote = run_cmd(
+            ["git", "-C", artifact_dir.parent, "config", "--get", "remote.origin.url"],
+            [],
+        )
+        if remote:
+            git_remote = remote.strip()
+
+    except Exception as ex:
+        logger.warning("Failed to get git information, proceeding.")
+        logger.debug(f"Failure reason: {ex}")
+
     run_cmd_with_error_handler(
         [
             "podman",
@@ -73,6 +97,10 @@ def build_artifact(
             tmp_tarball,
             "--type",
             artifact_type,
+            "--annotation",
+            f"{ArtifactAnnotationGitRemote}={git_remote}",
+            "--annotation",
+            f"{ArtifactAnnotationGitVersion}={git_version}",
         ],
         [],
         f"Failed to build OCI artifact from tarball '{tmp_tarball}'",
