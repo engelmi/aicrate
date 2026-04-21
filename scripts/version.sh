@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-VERSION="0.1.0"
+VERSION="0.2.0"
 RELEASE="1"
 IS_RELEASE="0"
 RELEASE_FILE=$(dirname "$(readlink -f "$0")")/RELEASE
