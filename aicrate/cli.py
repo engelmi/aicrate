@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from aicrate.commands import build, list, push, run
+from aicrate.commands import build, list, pull, push, run
 from aicrate.logger import LogLevel
 from aicrate.version import version
 
@@ -181,5 +181,18 @@ def add_push_parser(parent_parser: argparse._SubParsersAction):
     push_parser.add_argument(
         "artifact",
         help=("Artifact to push to registry"),
+        nargs=1,
+    )
+
+
+def add_pull_parser(parent_parser: argparse._SubParsersAction):
+    push_parser = parent_parser.add_parser(
+        "pull", help="Pull OCI artifacts from registry", usage="aicrate pull <artifact>"
+    )
+    push_parser.set_defaults(func=pull.pull)
+
+    push_parser.add_argument(
+        "artifact",
+        help=("Artifact to pull from registry"),
         nargs=1,
     )
