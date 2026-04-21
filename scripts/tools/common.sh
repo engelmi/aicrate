@@ -8,12 +8,19 @@ ANTHROPIC_SKILLS_REPO="anthropic"
 ANTHROPIC_SKILLS_DIR="${SKILLS_DIR}"/"${ANTHROPIC_SKILLS_REPO}"
 OBRA_SKILLS_REPO="obra"
 OBRA_SKILLS_DIR="${SKILLS_DIR}"/"${OBRA_SKILLS_REPO}"
+MKEMEL_SKILLS_REPO="mkemel"
+MKEMEL_SKILLS_DIR="${SKILLS_DIR}"/"${MKEMEL_SKILLS_REPO}"
 
 AGENT_DIR="${ROOT_DIR}"/agents
 AGENCY_AGENT_REPO="agency"
 AGENCY_AGENT_DIR="${AGENT_DIR}"/"${AGENCY_AGENT_REPO}"
 
 list_available_skills() {
+    for dir in "${MKEMEL_SKILLS_DIR}"/*; do
+        name=$(basename "${dir}")
+        echo "${MKEMEL_SKILLS_REPO}/${name}"
+    done
+    
     for dir in "${ANTHROPIC_SKILLS_DIR}"/*; do
         name=$(basename "${dir}")
         echo "${ANTHROPIC_SKILLS_REPO}/${name}"
