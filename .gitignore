@@ -3,3 +3,8 @@
 .tar.gz
 out/
 __pycache__/
+aicrate.egg-info/
+build/
+aicrate/version.py
+pyproject.toml
+scripts/RELEASE
