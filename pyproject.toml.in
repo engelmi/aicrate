@@ -12,7 +12,7 @@ script-files = ["aicrate/aicrate"]
 
 [project]
 name="aicrate"
-version="0.1.0"
+version="@VERSION@"
 description="Python tool for setting up isolated AI environments"
 readme="README.md"
 authors=[
