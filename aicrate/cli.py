@@ -157,4 +157,4 @@ def add_list_parser(parent_parser: argparse._SubParsersAction):
     build_parser = parent_parser.add_parser(
         "list", aliases=["ls"], help="List OCI artifacts"
     )
-    build_parser.set_defaults(func=list.list)
+    build_parser.set_defaults(func=list.print_listed_artifacts)

@@ -2,7 +2,14 @@ import argparse
 import json
 from dataclasses import dataclass
 
-from aicrate.commands.consts import ArtifactTypeAgentManifest, ArtifactTypeSkillManifest
+import tabulate
+
+from aicrate.commands.consts import (
+    ArtifactAnnotationGitRemote,
+    ArtifactAnnotationGitVersion,
+    ArtifactTypeAgentManifest,
+    ArtifactTypeSkillManifest,
+)
 from aicrate.common.command import run_cmd, run_cmd_with_error_handler
 
 
@@ -11,13 +18,12 @@ class ListedArtifact:
     Name: str
     Digest: str
     ArtifactType: str
+    GitRemote: str
+    GitVersion: str
 
 
-def list(args: argparse.Namespace):
-    artifacts: dict[str, ListedArtifact] = {
-        ArtifactTypeAgentManifest: [],
-        ArtifactTypeSkillManifest: [],
-    }
+def list_artifacts() -> list[ListedArtifact]:
+    artifacts: list[ListedArtifact] = []
 
     res = run_cmd_with_error_handler(
         ["podman", "artifact", "ls", "--format", "{{.Repository}}:{{.Tag}}"],
@@ -31,27 +37,44 @@ def list(args: argparse.Namespace):
         if output:
             json_output = json.loads(output)
             artifactType = json_output.get("Manifest", {}).get("artifactType", None)
-            if artifactType in artifacts.keys():
-                artifacts[artifactType].append(
+            if artifactType in [ArtifactTypeSkillManifest, ArtifactTypeAgentManifest]:
+                artifacts.append(
                     ListedArtifact(
                         Name=json_output.get("Name", ""),
                         Digest=json_output.get("Digest", ""),
                         ArtifactType=artifactType,
+                        GitRemote=json_output.get("Manifest", {})
+                        .get("annotations", {})
+                        .get(ArtifactAnnotationGitRemote),
+                        GitVersion=json_output.get("Manifest", {})
+                        .get("annotations", {})
+                        .get(ArtifactAnnotationGitVersion),
                     )
                 )
 
-    print_listed_artifacts(artifacts)
+    return artifacts
 
 
-def print_listed_artifacts(artifacts: dict[str, ListedArtifact]):
-    skills = artifacts.get(ArtifactTypeSkillManifest, [])
-    if skills:
-        print("Skills")
-    for skill in artifacts.get(ArtifactTypeSkillManifest, []):
-        print(f"\t{skill.Name}")
+def print_listed_artifacts(args: argparse.Namespace):
 
-    agents = artifacts.get(ArtifactTypeAgentManifest, [])
-    if agents:
-        print("Agents")
-    for agent in artifacts.get(ArtifactTypeAgentManifest, []):
-        print(f"\t{agent.Name}")
+    artifacts: list[ListedArtifact] = list_artifacts()
+
+    table_data = []
+    for artifact in artifacts:
+        atype = "Unknown"
+        if artifact.ArtifactType == ArtifactTypeSkillManifest:
+            atype = "Skill"
+        elif artifact.ArtifactType == ArtifactTypeAgentManifest:
+            atype = "Agent"
+
+        table_data.append(
+            [atype, artifact.Name, artifact.GitRemote, artifact.GitVersion]
+        )
+
+    print(
+        tabulate.tabulate(
+            tabular_data=table_data,
+            headers=["Type", "Name", "Remote", "Version"],
+            tablefmt="simple_outline",
+        )
+    )

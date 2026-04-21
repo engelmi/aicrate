@@ -24,7 +24,9 @@ classifiers=[
 ]
 keywords=['AI', 'claude', 'AI skills', 'AI agents', 'MCP server', 'Python']
 requires-python='>=3.9'
-dependencies=[]
+dependencies=[
+    "tabulate~=0.10.0",
+]
 
 [project.optional-dependencies]
 dev = [
