@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from aicrate.commands import build, list, run
+from aicrate.commands import build, list, push, run
 from aicrate.logger import LogLevel
 from aicrate.version import version
 
@@ -40,6 +40,7 @@ def parse_arguments(
 
     add_run_parser(subparsers)
     add_build_parser(subparsers)
+    add_push_parser(subparsers)
     add_list_parser(subparsers)
 
     return parser.parse_args(args), parser
@@ -168,4 +169,17 @@ def add_list_parser(parent_parser: argparse._SubParsersAction):
         "--skills",
         help=("Show only skills"),
         action="store_true",
+    )
+
+
+def add_push_parser(parent_parser: argparse._SubParsersAction):
+    push_parser = parent_parser.add_parser(
+        "push", help="Push OCI artifacts to registry", usage="aicrate push <artifact>"
+    )
+    push_parser.set_defaults(func=push.push)
+
+    push_parser.add_argument(
+        "artifact",
+        help=("Artifact to push to registry"),
+        nargs=1,
     )
