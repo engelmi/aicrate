@@ -1,6 +1,7 @@
 import argparse
 import shutil
 from pathlib import Path
+from typing import Optional
 
 from aicrate.commands.consts import (
     ArtifactAnnotationGitRemote,
@@ -22,6 +23,7 @@ def prune(args: argparse.Namespace):
 def build_agent(args: argparse.Namespace):
     build_artifact(
         dir=Path(args.dir),
+        subgroup=args.subgroup,
         tag_registry=args.tag_registry,
         tag_organization=args.tag_organization,
         tag_version=args.tag_version,
@@ -32,6 +34,7 @@ def build_agent(args: argparse.Namespace):
 def build_skill(args: argparse.Namespace):
     build_artifact(
         dir=Path(args.dir),
+        subgroup=args.subgroup,
         tag_registry=args.tag_registry,
         tag_organization=args.tag_organization,
         tag_version=args.tag_version,
@@ -41,6 +44,7 @@ def build_skill(args: argparse.Namespace):
 
 def build_artifact(
     dir: Path,
+    subgroup: Optional[str],
     tag_registry: str,
     tag_organization: str,
     tag_version: str,
@@ -55,6 +59,8 @@ def build_artifact(
     artifact_tag = (
         f"{tag_registry}/{tag_organization}/{artifact_dir.stem}:{tag_version}"
     )
+    if subgroup:
+        artifact_tag = f"{tag_registry}/{tag_organization}/{subgroup}/{artifact_dir.stem}:{tag_version}"
 
     run_cmd_with_error_handler(
         [

@@ -109,6 +109,14 @@ def _add_artifact_parser_arguments(parser):
     )
 
     parser.add_argument(
+        "--oci-subgroup",
+        help=("Subgroup part of the OCI artifact name"),
+        dest="subgroup",
+        type=str,
+        default="",
+    )
+
+    parser.add_argument(
         "--oci-tag-registry",
         help=("Registry part of the tag for the OCI artifact"),
         dest="tag_registry",
