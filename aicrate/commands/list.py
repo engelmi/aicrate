@@ -1,6 +1,6 @@
 import argparse
 import json
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 import tabulate
 
@@ -61,6 +61,22 @@ def print_listed_artifacts(args: argparse.Namespace):
 
     show_skills = args.skills
     show_agents = args.agents
+
+    if args.json:
+        data = {"artifacts": []}
+        skills = [
+            asdict(a) for a in artifacts if a.ArtifactType == ArtifactTypeSkillManifest
+        ]
+        agents = [
+            asdict(a) for a in artifacts if a.ArtifactType == ArtifactTypeAgentManifest
+        ]
+        if show_skills:
+            data["artifacts"].extend(skills)
+        if show_agents:
+            data["artifacts"].extend(agents)
+
+        print(json.dumps(data, indent=2))
+        return
 
     table_data = []
     for artifact in artifacts:

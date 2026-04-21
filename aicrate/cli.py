@@ -178,6 +178,11 @@ def add_list_parser(parent_parser: argparse._SubParsersAction):
         help=("Show only skills"),
         action="store_true",
     )
+    list_parser.add_argument(
+        "--json",
+        help=("Output as json"),
+        action="store_true",
+    )
 
 
 def add_push_parser(parent_parser: argparse._SubParsersAction):
