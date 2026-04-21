@@ -59,12 +59,20 @@ def print_listed_artifacts(args: argparse.Namespace):
 
     artifacts: list[ListedArtifact] = list_artifacts()
 
+    show_skills = args.skills
+    show_agents = args.agents
+
     table_data = []
     for artifact in artifacts:
         atype = "Unknown"
         if artifact.ArtifactType == ArtifactTypeSkillManifest:
+            if not show_skills and show_agents:
+                continue
             atype = "Skill"
+
         elif artifact.ArtifactType == ArtifactTypeAgentManifest:
+            if show_skills and not show_agents:
+                continue
             atype = "Agent"
 
         table_data.append(

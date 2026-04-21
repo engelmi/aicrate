@@ -154,7 +154,18 @@ def add_build_prune_parser(parent_parser: argparse._SubParsersAction):
 
 
 def add_list_parser(parent_parser: argparse._SubParsersAction):
-    build_parser = parent_parser.add_parser(
+    list_parser = parent_parser.add_parser(
         "list", aliases=["ls"], help="List OCI artifacts"
     )
-    build_parser.set_defaults(func=list.print_listed_artifacts)
+    list_parser.set_defaults(func=list.print_listed_artifacts)
+
+    list_parser.add_argument(
+        "--agents",
+        help=("Show only agents"),
+        action="store_true",
+    )
+    list_parser.add_argument(
+        "--skills",
+        help=("Show only skills"),
+        action="store_true",
+    )
