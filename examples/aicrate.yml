@@ -3,42 +3,40 @@ default:
     image: quay.io/rhivos-ai-tools/aicrate:latest
     workspace: ~/
   skills:
-    - quay.io/rhivos-ai-tools/skill-algorithmic-art:latest
-    - quay.io/rhivos-ai-tools/skill-brand-guidelines:latest
-    - quay.io/rhivos-ai-tools/skill-canvas-design:latest
-    - quay.io/rhivos-ai-tools/skill-claude-api:latest
-    - quay.io/rhivos-ai-tools/skill-doc-coauthoring:latest
-    - quay.io/rhivos-ai-tools/skill-docx:latest
-    - quay.io/rhivos-ai-tools/skill-frontend-design:latest
-    - quay.io/rhivos-ai-tools/skill-internal-comms:latest
-    - quay.io/rhivos-ai-tools/skill-mcp-builder:latest
-    - quay.io/rhivos-ai-tools/skill-pdf:latest
-    - quay.io/rhivos-ai-tools/skill-pptx:latest
-    - quay.io/rhivos-ai-tools/skill-skill-creator:latest
-    - quay.io/rhivos-ai-tools/skill-slack-gif-creator:latest
-    - quay.io/rhivos-ai-tools/skill-theme-factory:latest
-    - quay.io/rhivos-ai-tools/skill-webapp-testing:latest
-    - quay.io/rhivos-ai-tools/skill-web-artifacts-builder:latest
-    - quay.io/rhivos-ai-tools/skill-xlsx:latest
-    - quay.io/rhivos-ai-tools/skill-brainstorming:latest
-    - quay.io/rhivos-ai-tools/skill-dispatching-parallel-agents:latest
-    - quay.io/rhivos-ai-tools/skill-executing-plans:latest
-    - quay.io/rhivos-ai-tools/skill-finishing-a-development-branch:latest
-    - quay.io/rhivos-ai-tools/skill-receiving-code-review:latest
-    - quay.io/rhivos-ai-tools/skill-requesting-code-review:latest
-    - quay.io/rhivos-ai-tools/skill-subagent-driven-development:latest
-    - quay.io/rhivos-ai-tools/skill-systematic-debugging:latest
-    - quay.io/rhivos-ai-tools/skill-test-driven-development:latest
-    - quay.io/rhivos-ai-tools/skill-using-git-worktrees:latest
-    - quay.io/rhivos-ai-tools/skill-using-superpowers:latest
-    - quay.io/rhivos-ai-tools/skill-verification-before-completion:latest
-    - quay.io/rhivos-ai-tools/skill-writing-plans:latest
-    - quay.io/rhivos-ai-tools/skill-writing-skills:latest
+    - quay.io/aicrate/mkemel/jira-acli:latest
+    - quay.io/aicrate/anthropic/algorithmic-art:latest
+    - quay.io/aicrate/anthropic/brand-guidelines:latest
+    - quay.io/aicrate/anthropic/canvas-design:latest
+    - quay.io/aicrate/anthropic/claude-api:latest
+    - quay.io/aicrate/anthropic/doc-coauthoring:latest
+    - quay.io/aicrate/anthropic/docx:latest
+    - quay.io/aicrate/anthropic/frontend-design:latest
+    - quay.io/aicrate/anthropic/internal-comms:latest
+    - quay.io/aicrate/anthropic/mcp-builder:latest
+    - quay.io/aicrate/anthropic/pdf:latest
+    - quay.io/aicrate/anthropic/pptx:latest
+    - quay.io/aicrate/anthropic/skill-creator:latest
+    - quay.io/aicrate/anthropic/slack-gif-creator:latest
+    - quay.io/aicrate/anthropic/theme-factory:latest
+    - quay.io/aicrate/anthropic/webapp-testing:latest
+    - quay.io/aicrate/anthropic/web-artifacts-builder:latest
+    - quay.io/aicrate/anthropic/xlsx:latest
+    - quay.io/aicrate/obra/brainstorming:latest
+    - quay.io/aicrate/obra/dispatching-parallel-agents:latest
+    - quay.io/aicrate/obra/executing-plans:latest
+    - quay.io/aicrate/obra/finishing-a-development-branch:latest
+    - quay.io/aicrate/obra/receiving-code-review:latest
+    - quay.io/aicrate/obra/requesting-code-review:latest
+    - quay.io/aicrate/obra/subagent-driven-development:latest
+    - quay.io/aicrate/obra/systematic-debugging:latest
+    - quay.io/aicrate/obra/test-driven-development:latest
+    - quay.io/aicrate/obra/using-git-worktrees:latest
+    - quay.io/aicrate/obra/using-superpowers:latest
+    - quay.io/aicrate/obra/verification-before-completion:latest
+    - quay.io/aicrate/obra/writing-plans:latest
+    - quay.io/aicrate/obra/writing-skills:latest
   agents:
-    - quay.io/rhivos-ai-tools/agent-engineering:latest
-    - quay.io/rhivos-ai-tools/agent-product:latest
-    - quay.io/rhivos-ai-tools/agent-project-management:latest
-    - quay.io/rhivos-ai-tools/agent-testing:latest
+    - quay.io/aicrate/agency/engineering-code-reviewer:latest
   mcp:
     - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
       port: 8081
