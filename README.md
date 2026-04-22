@@ -17,38 +17,36 @@ pip install aicrate
 ## Basic Usage
 
 ```bash
-# Run an AI environment with your workspace
-aicrate run --workspace ~/myproject --config ./examples/aicrate.yml --mode podman
+# Run a containerized AI agent with the current directory as workspace
+# and no additional skills or agents
+$ aicrate run
 
-# Automatically dropped into the cli containers workspace (mounted project directory)
-$ pwd
-/workspace
-
-# claude is ready to go
-$ claude
+# ...use a different workspace, and skills and agents as defined in the config
+$ aicrate run --workspace ~/myproject --config ./examples/aicrate.yml
 ```
+
+After running `aicrate run`, the user is automatically dropped into the `/workspace`.
 
 ## Configuration
 
 Define your AI environment in a YAML configuration file:
 
 ```yaml
-default:
-  aicrate:
-    image: quay.io/rhivos-ai-tools/aicrate:latest
-    workspace: ~/
-  skills:
-    - quay.io/aicrate/anthropic/claude-api:latest
-    - quay.io/aicrate/anthropic/pdf:latest
-    - quay.io/aicrate/obra/test-driven-development:latest
-  agents:
-    - quay.io/aicrate/agency/engineering-code-reviewer:latest
-  mcp:
-    - image: quay.io/aicrate/mcp-testing-farm-mcp:latest
-      port: 8081
-      env:
-        - MCP_TRANSPORT: sse
-        - MCP_PORT: 8081
+aicrate:
+  image: quay.io/rhivos-ai-tools/aicrate:latest
+  workspace: ~/
+skills:
+  - quay.io/aicrate/anthropic/claude-api:latest
+  - quay.io/aicrate/anthropic/pdf:latest
+  - quay.io/aicrate/obra/test-driven-development:latest
+agents:
+  - quay.io/aicrate/agency/engineering-code-reviewer:latest
+mcp:
+  - image: quay.io/aicrate/mcp-testing-farm-mcp:latest
+    port: 8081
+    env:
+      - MCP_TRANSPORT: sse
+      - MCP_PORT: 8081
 ```
 
 See [`examples/aicrate.yml`](./examples/aicrate.yml) for a complete configuration with 30+ skills and agents.
