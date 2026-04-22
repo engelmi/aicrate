@@ -44,7 +44,7 @@ default:
   agents:
     - quay.io/aicrate/agency/engineering-code-reviewer:latest
   mcp:
-    - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
+    - image: quay.io/aicrate/mcp-testing-farm-mcp:latest
       port: 8081
       env:
         - MCP_TRANSPORT: sse
@@ -54,3 +54,11 @@ default:
 See [`examples/aicrate.yml`](./examples/aicrate.yml) for a complete configuration with 30+ skills and agents.
 
 See [aicrate on quay.io](https://quay.io/organization/aicrate) for pre-built and ready to pull artifacts.
+
+
+## Similar projects
+
+- [LobsterTrap/puzzlepod](https://github.com/LobsterTrap/puzzlepod) \ 
+PuzzlePod and aicrate leverage Podman and systemd and run the agents inside a container. However, while PuzzlePod adds a governance layer on top (e.g. automated commit/rollback decisions), aicrate leverages [OCI artifacts](https://edu.chainguard.dev/open-source/oci/what-are-oci-artifacts/) to manage skills and agents in OCI registries.
+- [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) \
+OpenShell provides a safe, private runtime for autonomous AI agents. Its goal are multi-tenant enterprise deployments while aicrate is intended for local usage by a single developer.
