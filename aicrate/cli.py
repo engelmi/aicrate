@@ -93,6 +93,13 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         action="store_true",
     )
 
+    run_parser.add_argument(
+        "--env-file",
+        dest="envfile",
+        help=("Add environment variables from envfile to the workbox"),
+        type=str,
+    )
+
 
 def add_build_parser(parent_parser: argparse._SubParsersAction):
     build_parser = parent_parser.add_parser(

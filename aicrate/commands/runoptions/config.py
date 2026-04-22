@@ -1,6 +1,7 @@
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 from aicrate.common.file import load_file
 
@@ -46,6 +47,7 @@ class RunConfig:
 
     # CLI args
     Detached: bool
+    EnvFile: Optional[Path]
 
     def from_args(args: argparse.Namespace) -> "RunConfig":
         config = {}
@@ -68,4 +70,5 @@ class RunConfig:
             Agents=agents,
             MCPServer=mcp,
             Detached=args.detached,
+            EnvFile=None if not args.envfile else Path(args.envfile).expanduser().resolve(),
         )
