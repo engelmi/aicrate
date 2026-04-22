@@ -2,7 +2,7 @@
 
 VERSION="0.2.0"
 RELEASE="1"
-IS_RELEASE="0"
+IS_RELEASE="1"
 RELEASE_FILE=$(dirname "$(readlink -f "$0")")/RELEASE
 
 function short(){
