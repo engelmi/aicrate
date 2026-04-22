@@ -1,17 +1,41 @@
+import json
 import pty
+from dataclasses import dataclass
 from pathlib import Path
 
+from aicrate.commands.runoptions.config import RunConfig
 from aicrate.common.command import run_cmd_with_error_handler
-from aicrate.model import ClaudeJSON, MCPServer
 
 
-def run_aicrate(config: dict, workspace_dir: Path):
-    aicrate_config = config.get("aicrate", {})
-    skills_config = config.get("skills", {})
-    agents_config = config.get("agents", {})
-    mcp_config = config.get("mcp", {})
+@dataclass
+class MCPServer:
 
-    pod_name = f"aicrate-{workspace_dir.name}"
+    Name: str
+    Type: str
+    URL: str
+
+
+@dataclass
+class ClaudeJSON:
+
+    mcp_server: list[MCPServer]
+
+    def to_config(self) -> str:
+        server = {}
+        for mcp in self.mcp_server:
+            server[mcp.Name] = {"type": mcp.Type, "url": mcp.URL}
+
+        return json.dumps(
+            {"projects": {"/workspace": {"mcpServers": server}}},
+            indent=2,
+            sort_keys=True,
+        )
+
+
+def run_aicrate(cfg: RunConfig):
+    workspace_name = cfg.WorkBox.MountedWorkspace.name
+
+    pod_name = f"aicrate-{workspace_name}"
     create_pod_cmd = [
         "podman",
         "pod",
@@ -25,15 +49,15 @@ def run_aicrate(config: dict, workspace_dir: Path):
         pod_name,
     ]
 
-    box_container_name = f"aicrate-{workspace_dir.name}"
+    box_container_name = f"aicrate-{workspace_name}"
     skill_mounts: list[str] = []
-    for skill in skills_config:
+    for skill in cfg.Skills:
         name = skill.split("/")[-1].split(":")[0]
         skill_mounts.append(
             f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
         )
     agent_mounts: list[str] = []
-    for agent in agents_config:
+    for agent in cfg.Agents:
         name = agent.split("/")[-1].split(":")[0]
         agent_mounts.append(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
@@ -42,7 +66,7 @@ def run_aicrate(config: dict, workspace_dir: Path):
     volumes.append(
         f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
     )
-    volumes.append(f"{workspace_dir}:/workspace")
+    volumes.append(f"{cfg.WorkBox.MountedWorkspace}:{cfg.WorkBox.InternalWorkspace}")
 
     create_container_cli_box = [
         "podman",
@@ -65,7 +89,7 @@ def run_aicrate(config: dict, workspace_dir: Path):
         create_container_cli_box.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
         create_container_cli_box.extend(["--mount", agent_mount])
-    create_container_cli_box.extend([aicrate_config.get("image", ""), "/sbin/init"])
+    create_container_cli_box.extend([cfg.WorkBox.OCIImage, "/sbin/init"])
 
     # exec into aicrate container
     exec_into_cli_box_cmd = [
@@ -80,15 +104,13 @@ def run_aicrate(config: dict, workspace_dir: Path):
 
     mcp_servers_in_config: list[MCPServer] = []
     create_mcp_container_cmds: dict[str, list[str]] = {}
-    for mcp in mcp_config:
-        image: str = mcp.get("image", "")
-        mcp_name = image.rsplit("/", 1)[1].split(":")[0]
-        env_vars: list[str] = mcp.get("env", [])
+    for mcp in cfg.MCPServer:
+        mcp_name = mcp.OCIImage.rsplit("/", 1)[1].split(":")[0]
         cmd = [
             "podman",
             "run",
             "--name",
-            f"{mcp_name}-{workspace_dir.name}",
+            f"{mcp_name}-{workspace_name}",
             "--replace",
             "--rm",
             "--pull",
@@ -99,16 +121,15 @@ def run_aicrate(config: dict, workspace_dir: Path):
             "--pod",
             pod_name,
         ]
-        for env_var in env_vars:
+        for env_var in mcp.Env:
             for k, v in env_var.items():
                 cmd.extend(["--env", f"{k}={v}"])
-        cmd.append(image)
+        cmd.append(mcp.OCIImage)
 
         create_mcp_container_cmds[mcp_name] = cmd
 
-        port = mcp.get("port", "")
         mcp_servers_in_config.append(
-            MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{port}/sse")
+            MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{mcp.Port}/sse")
         )
 
     run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create aicrate pod")
@@ -144,7 +165,7 @@ def run_aicrate(config: dict, workspace_dir: Path):
             # do not break on an exception and keep stopping mcp containers
             try:
                 run_cmd_with_error_handler(
-                    ["podman", "stop", f"{name}-{workspace_dir.name}"],
+                    ["podman", "stop", f"{name}-{workspace_name}"],
                     [],
                     f"Failed to stop MCP server {name}",
                 )

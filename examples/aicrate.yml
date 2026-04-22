@@ -1,48 +1,47 @@
-default:
-  aicrate:
-    image: quay.io/rhivos-ai-tools/aicrate:latest
-    workspace: ~/
-  skills:
-    - quay.io/aicrate/mkemel/jira-acli:latest
-    - quay.io/aicrate/anthropic/algorithmic-art:latest
-    - quay.io/aicrate/anthropic/brand-guidelines:latest
-    - quay.io/aicrate/anthropic/canvas-design:latest
-    - quay.io/aicrate/anthropic/claude-api:latest
-    - quay.io/aicrate/anthropic/doc-coauthoring:latest
-    - quay.io/aicrate/anthropic/docx:latest
-    - quay.io/aicrate/anthropic/frontend-design:latest
-    - quay.io/aicrate/anthropic/internal-comms:latest
-    - quay.io/aicrate/anthropic/mcp-builder:latest
-    - quay.io/aicrate/anthropic/pdf:latest
-    - quay.io/aicrate/anthropic/pptx:latest
-    - quay.io/aicrate/anthropic/skill-creator:latest
-    - quay.io/aicrate/anthropic/slack-gif-creator:latest
-    - quay.io/aicrate/anthropic/theme-factory:latest
-    - quay.io/aicrate/anthropic/webapp-testing:latest
-    - quay.io/aicrate/anthropic/web-artifacts-builder:latest
-    - quay.io/aicrate/anthropic/xlsx:latest
-    - quay.io/aicrate/obra/brainstorming:latest
-    - quay.io/aicrate/obra/dispatching-parallel-agents:latest
-    - quay.io/aicrate/obra/executing-plans:latest
-    - quay.io/aicrate/obra/finishing-a-development-branch:latest
-    - quay.io/aicrate/obra/receiving-code-review:latest
-    - quay.io/aicrate/obra/requesting-code-review:latest
-    - quay.io/aicrate/obra/subagent-driven-development:latest
-    - quay.io/aicrate/obra/systematic-debugging:latest
-    - quay.io/aicrate/obra/test-driven-development:latest
-    - quay.io/aicrate/obra/using-git-worktrees:latest
-    - quay.io/aicrate/obra/using-superpowers:latest
-    - quay.io/aicrate/obra/verification-before-completion:latest
-    - quay.io/aicrate/obra/writing-plans:latest
-    - quay.io/aicrate/obra/writing-skills:latest
-  agents:
-    - quay.io/aicrate/agency/engineering-code-reviewer:latest
-  mcp:
-    - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
-      port: 8081
-      env:
-        - TESTING_FARM_API_URL: https://api.testing-farm.io/v0.1
-        - TESTING_FARM_ARTIFACTS_URL: https://artifacts.osci.redhat.com/testing-farm
-        - MCP_TRANSPORT: sse
-        - MCP_PORT: 8081
-        - MCP_HOST: 127.0.0.1
+workbox:
+  image: quay.io/aicrate/claudebox:latest
+  workspace: ~/
+skills:
+  - quay.io/aicrate/mkemel/jira-acli:latest
+  - quay.io/aicrate/anthropic/algorithmic-art:latest
+  - quay.io/aicrate/anthropic/brand-guidelines:latest
+  - quay.io/aicrate/anthropic/canvas-design:latest
+  - quay.io/aicrate/anthropic/claude-api:latest
+  - quay.io/aicrate/anthropic/doc-coauthoring:latest
+  - quay.io/aicrate/anthropic/docx:latest
+  - quay.io/aicrate/anthropic/frontend-design:latest
+  - quay.io/aicrate/anthropic/internal-comms:latest
+  - quay.io/aicrate/anthropic/mcp-builder:latest
+  - quay.io/aicrate/anthropic/pdf:latest
+  - quay.io/aicrate/anthropic/pptx:latest
+  - quay.io/aicrate/anthropic/skill-creator:latest
+  - quay.io/aicrate/anthropic/slack-gif-creator:latest
+  - quay.io/aicrate/anthropic/theme-factory:latest
+  - quay.io/aicrate/anthropic/webapp-testing:latest
+  - quay.io/aicrate/anthropic/web-artifacts-builder:latest
+  - quay.io/aicrate/anthropic/xlsx:latest
+  - quay.io/aicrate/obra/brainstorming:latest
+  - quay.io/aicrate/obra/dispatching-parallel-agents:latest
+  - quay.io/aicrate/obra/executing-plans:latest
+  - quay.io/aicrate/obra/finishing-a-development-branch:latest
+  - quay.io/aicrate/obra/receiving-code-review:latest
+  - quay.io/aicrate/obra/requesting-code-review:latest
+  - quay.io/aicrate/obra/subagent-driven-development:latest
+  - quay.io/aicrate/obra/systematic-debugging:latest
+  - quay.io/aicrate/obra/test-driven-development:latest
+  - quay.io/aicrate/obra/using-git-worktrees:latest
+  - quay.io/aicrate/obra/using-superpowers:latest
+  - quay.io/aicrate/obra/verification-before-completion:latest
+  - quay.io/aicrate/obra/writing-plans:latest
+  - quay.io/aicrate/obra/writing-skills:latest
+agents:
+  - quay.io/aicrate/agency/engineering-code-reviewer:latest
+mcp:
+  - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
+    port: 8081
+    env:
+      - TESTING_FARM_API_URL: https://api.testing-farm.io/v0.1
+      - TESTING_FARM_ARTIFACTS_URL: https://artifacts.osci.redhat.com/testing-farm
+      - MCP_TRANSPORT: sse
+      - MCP_PORT: 8081
+      - MCP_HOST: 127.0.0.1

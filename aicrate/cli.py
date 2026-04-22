@@ -56,7 +56,6 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         help=("Configuration of aicrate to use."),
         dest="config",
         type=str,
-        default="/home/mengel/projects/engelmi/aicrate/aicrate/aicrate.conf.yml",
     )
     run_parser.add_argument(
         "--mode",
@@ -96,13 +95,14 @@ def add_build_parser(parent_parser: argparse._SubParsersAction):
     subparsers = build_parser.add_subparsers(dest="build_subcommand")
     add_build_skill_parser(subparsers)
     add_build_agent_parser(subparsers)
+    add_build_workbox_parser(subparsers)
     add_build_prune_parser(subparsers)
 
 
 def _add_artifact_parser_arguments(parser):
     parser.add_argument(
         "--dir",
-        help=("Directory containing the skill."),
+        help=("Directory containing the artifact."),
         dest="dir",
         type=str,
         required=True,
@@ -155,6 +155,20 @@ def add_build_agent_parser(parent_parser: argparse._SubParsersAction):
     _add_artifact_parser_arguments(build_agent_parser)
 
 
+def add_build_workbox_parser(parent_parser: argparse._SubParsersAction):
+    build_workbox_parser = parent_parser.add_parser(
+        "workbox", help="Build the workbox of aicrate"
+    )
+    build_workbox_parser.set_defaults(func=build.build_workbox)
+    build_workbox_parser.add_argument(
+        "--dir",
+        help=("Directory containing the Containerfile."),
+        dest="dir",
+        type=str,
+        required=True,
+    )
+
+
 def add_build_prune_parser(parent_parser: argparse._SubParsersAction):
     build_agent_parser = parent_parser.add_parser(
         "prune", help="Prune all temporary build artifacts"
@@ -199,12 +213,12 @@ def add_push_parser(parent_parser: argparse._SubParsersAction):
 
 
 def add_pull_parser(parent_parser: argparse._SubParsersAction):
-    push_parser = parent_parser.add_parser(
+    pull_parser = parent_parser.add_parser(
         "pull", help="Pull OCI artifacts from registry", usage="aicrate pull <artifact>"
     )
-    push_parser.set_defaults(func=pull.pull)
+    pull_parser.set_defaults(func=pull.pull)
 
-    push_parser.add_argument(
+    pull_parser.add_argument(
         "artifact",
         help=("Artifact to pull from registry"),
         nargs=1,

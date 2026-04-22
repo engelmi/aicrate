@@ -20,6 +20,32 @@ def prune(args: argparse.Namespace):
         shutil.rmtree(TMP_BUILD_DIR)
 
 
+def build_workbox(args: argparse.Namespace):
+
+    tag_registry = "quay.io"
+    tag_organization = "aicrate"
+    name = "claudebox"
+    tag_version = "latest"
+
+    tag = f"{tag_registry}/{tag_organization}/{name}:{tag_version}"
+
+    dir = Path(args.dir).expanduser().resolve()
+
+    run_cmd_with_error_handler(
+        [
+            "podman",
+            "build",
+            "-f",
+            "Containerfile",
+            "-t",
+            tag,
+            f"{dir}",
+        ],
+        [],
+        f"Failed to build workbox from Containerfile in '{dir}'",
+    )
+
+
 def build_agent(args: argparse.Namespace):
     build_artifact(
         dir=Path(args.dir),

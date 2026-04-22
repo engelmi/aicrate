@@ -2,6 +2,8 @@ from abc import ABC
 from dataclasses import dataclass
 from pathlib import Path
 
+from aicrate.commands.runoptions.config import RunConfig
+
 
 class Serializable(ABC):
 
@@ -111,14 +113,11 @@ class QuadletContainer(Serializable):
 
 
 def build_from_config(
-    config: dict, workspace_dir: Path, output_dir: Path
+    cfg: RunConfig, output_dir: Path
 ) -> tuple[QuadletPod, list[QuadletContainer]]:
-    aicrate_config = config.get("aicrate", {})
-    skills_config = config.get("skills", {})
-    agents_config = config.get("agents", {})
-    mcp_config = config.get("mcp", [])
+    workspace_name = cfg.WorkBox.MountedWorkspace.name
 
-    pod_name = f"aicrate-{workspace_dir.name}"
+    pod_name = f"aicrate-{workspace_name}"
     pod = QuadletPod(
         Filepath=output_dir / Path(f"{pod_name}.pod"),
         Unit=QuadletSectionUnit(
@@ -132,16 +131,16 @@ def build_from_config(
         Install=QuadletSectionInstall(WantedBy=[]),
     )
 
-    container_name = f"aicrate-{workspace_dir.name}"
+    container_name = f"aicrate-{workspace_name}"
 
     skill_mounts: list[str] = []
-    for skill in skills_config:
+    for skill in cfg.Skills:
         name = skill.split("/")[-1].split(":")[0]
         skill_mounts.append(
             f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
         )
     agent_mounts: list[str] = []
-    for agent in agents_config:
+    for agent in cfg.Agents:
         name = agent.split("/")[-1].split(":")[0]
         agent_mounts.append(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
@@ -151,17 +150,17 @@ def build_from_config(
     volumes.append(
         f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
     )
-    volumes.append(f"{workspace_dir}:/workspace")
+    volumes.append(f"{cfg.WorkBox.MountedWorkspace}:{cfg.WorkBox.InternalWorkspace}")
 
     aicrate_container = QuadletContainer(
         Filepath=output_dir / Path(f"{container_name}.container"),
         Unit=QuadletSectionUnit(
-            Description=f"aicrate container {workspace_dir.name}",
+            Description=f"aicrate container {workspace_name}",
             Before=[],
             After=[],
         ),
         Container=QuadletSectionContainer(
-            Image=aicrate_config.get("image", ""),
+            Image=cfg.WorkBox.OCIImage,
             ContainerName=container_name,
             Pod=f"{pod_name}.pod",
             Exec="/sbin/init",
@@ -175,9 +174,8 @@ def build_from_config(
     )
 
     mcp_container: list[QuadletContainer] = []
-    for mcp in mcp_config:
-        image: str = mcp.get("image", "")
-        mcp_name = image.rsplit("/", 1)[1].split(":")[0]
+    for mcp in cfg.MCPServer:
+        mcp_name = mcp.OCIImage.rsplit("/", 1)[1].split(":")[0]
         env_vars: list[str] = mcp.get("env", [])
 
         mcp_container.append(
@@ -189,7 +187,7 @@ def build_from_config(
                     After=[],
                 ),
                 Container=QuadletSectionContainer(
-                    Image=image,
+                    Image=mcp.OCIImage,
                     ContainerName=mcp_name,
                     Pod=f"{pod_name}.pod",
                     Exec="",
