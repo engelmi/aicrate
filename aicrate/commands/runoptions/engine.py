@@ -32,7 +32,7 @@ class ClaudeJSON:
         )
 
 
-def run_aicrate(cfg: RunConfig):
+def run_aicrate(cfg: RunConfig, detached: bool):
     workspace_name = cfg.WorkBox.MountedWorkspace.name
 
     pod_name = f"aicrate-{workspace_name}"
@@ -158,16 +158,17 @@ def run_aicrate(cfg: RunConfig):
     try:
         pty.spawn(exec_into_cli_box_cmd)
     finally:
-        run_cmd_with_error_handler(
-            ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"
-        )
-        for name in create_mcp_container_cmds.keys():
-            # do not break on an exception and keep stopping mcp containers
-            try:
-                run_cmd_with_error_handler(
-                    ["podman", "stop", f"{name}-{workspace_name}"],
-                    [],
-                    f"Failed to stop MCP server {name}",
-                )
-            except Exception:
-                pass
+        if not detached:
+            run_cmd_with_error_handler(
+                ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"
+            )
+            for name in create_mcp_container_cmds.keys():
+                # do not break on an exception and keep stopping mcp containers
+                try:
+                    run_cmd_with_error_handler(
+                        ["podman", "stop", f"{name}-{workspace_name}"],
+                        [],
+                        f"Failed to stop MCP server {name}",
+                    )
+                except Exception:
+                    pass

@@ -85,6 +85,14 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         default="~/.config/containers/systemd",
     )
 
+    run_parser.add_argument(
+        "--detach",
+        "-d",
+        dest="detached",
+        help=("Run aicrate in detached mode."),
+        action="store_true",
+    )
+
 
 def add_build_parser(parent_parser: argparse._SubParsersAction):
     build_parser = parent_parser.add_parser(
