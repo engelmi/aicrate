@@ -27,6 +27,6 @@ def run(args: argparse.Namespace):
             "Failed to reload daemon and generate quadlet services",
         )
     elif args.mode == "podman":
-        engine.run_aicrate(cfg, detached=args.detached)
+        engine.run_aicrate(cfg)
     else:
         raise NotImplementedError(f"Mode '{args.mode}' not implemented")

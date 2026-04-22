@@ -32,7 +32,7 @@ class ClaudeJSON:
         )
 
 
-def run_aicrate(cfg: RunConfig, detached: bool):
+def run_aicrate(cfg: RunConfig):
     workspace_name = cfg.WorkBox.MountedWorkspace.name
 
     pod_name = f"aicrate-{workspace_name}"
@@ -158,7 +158,7 @@ def run_aicrate(cfg: RunConfig, detached: bool):
     try:
         pty.spawn(exec_into_cli_box_cmd)
     finally:
-        if not detached:
+        if not cfg.Detached:
             run_cmd_with_error_handler(
                 ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"
             )

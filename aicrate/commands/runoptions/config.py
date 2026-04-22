@@ -38,10 +38,14 @@ class WorkBox:
 @dataclass
 class RunConfig:
 
+    # Config file args
     WorkBox: WorkBox
     Skills: list[str]
     Agents: list[str]
     MCPServer: list[MCPServer]
+
+    # CLI args
+    Detached: bool
 
     def from_args(args: argparse.Namespace) -> "RunConfig":
         config = {}
@@ -53,17 +57,15 @@ class RunConfig:
             path = Path(args.config).expanduser().resolve()
             config = load_file(path)
 
-        return RunConfig.from_dict(config)
-
-    def from_dict(data: dict) -> "RunConfig":
-        workbox = WorkBox.from_dict(data.get("workbox", {}))
-        skills = data.get("skills", [])
-        agents = data.get("agents", [])
-        mcp = [MCPServer.from_dict(d) for d in data.get("mcp", [])]
+        workbox = WorkBox.from_dict(config.get("workbox", {}))
+        skills = config.get("skills", [])
+        agents = config.get("agents", [])
+        mcp = [MCPServer.from_dict(d) for d in config.get("mcp", [])]
 
         return RunConfig(
             WorkBox=workbox,
             Skills=skills,
             Agents=agents,
             MCPServer=mcp,
+            Detached=args.detached,
         )
