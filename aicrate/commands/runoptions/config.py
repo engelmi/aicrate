@@ -51,13 +51,13 @@ class RunConfig:
 
     def from_args(args: argparse.Namespace) -> "RunConfig":
         config = {}
+        if args.config is not None:
+            path = Path(args.config).expanduser().resolve()
+            config = load_file(path)
         if args.workspace is not None:
             config["workbox"] = {
                 "workspace": args.workspace,
             }
-        if args.config is not None:
-            path = Path(args.config).expanduser().resolve()
-            config = load_file(path)
 
         workbox = WorkBox.from_dict(config.get("workbox", {}))
         skills = config.get("skills", [])
@@ -70,5 +70,7 @@ class RunConfig:
             Agents=agents,
             MCPServer=mcp,
             Detached=args.detached,
-            EnvFile=None if not args.envfile else Path(args.envfile).expanduser().resolve(),
+            EnvFile=(
+                None if not args.envfile else Path(args.envfile).expanduser().resolve()
+            ),
         )

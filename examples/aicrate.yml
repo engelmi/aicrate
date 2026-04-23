@@ -1,6 +1,5 @@
 workbox:
   image: quay.io/aicrate/claudebox:latest
-  workspace: ~/
 skills:
   - quay.io/aicrate/mkemel/jira-acli:latest
   - quay.io/aicrate/anthropic/algorithmic-art:latest
