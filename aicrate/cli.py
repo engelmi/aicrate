@@ -216,13 +216,28 @@ def add_list_parser(parent_parser: argparse._SubParsersAction):
 
 def add_push_parser(parent_parser: argparse._SubParsersAction):
     push_parser = parent_parser.add_parser(
-        "push", help="Push OCI artifacts to registry", usage="aicrate push <artifact>"
+        "push", help="Push OCI artifacts or images to registry"
     )
-    push_parser.set_defaults(func=push.push)
 
-    push_parser.add_argument(
+    subparsers = push_parser.add_subparsers(dest="push_subcommand")
+
+    push_artifact_parser = subparsers.add_parser(
+        "artifact", help="Push an OCI artifact to registry"
+    )
+    push_artifact_parser.set_defaults(func=push.push_artifact)
+    push_artifact_parser.add_argument(
         "artifact",
         help=("Artifact to push to registry"),
+        nargs=1,
+    )
+
+    push_image_parser = subparsers.add_parser(
+        "image", help="Push an OCI image to registry"
+    )
+    push_image_parser.set_defaults(func=push.push_image)
+    push_image_parser.add_argument(
+        "image",
+        help=("Image to push to registry"),
         nargs=1,
     )
 
