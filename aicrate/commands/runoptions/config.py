@@ -25,14 +25,19 @@ class MCPServer:
 class WorkBox:
 
     OCIImage: str
+    Skills: list[str]
+    Agents: list[str]
+
     MountedWorkspace: Path
     InternalWorkspace: Path
 
     def from_dict(data: dict) -> "WorkBox":
         return WorkBox(
             OCIImage=data.get("image", "quay.io/aicrate/claudebox:latest"),
+            Skills=data.get("skills", []),
+            Agents=data.get("agents", []),
             MountedWorkspace=Path(data.get("workspace", "")).expanduser().resolve(),
-            InternalWorkspace=Path("/workspace").expanduser().resolve(),
+            InternalWorkspace=Path("/workspace"),
         )
 
 
@@ -41,8 +46,6 @@ class RunConfig:
 
     # Config file args
     WorkBox: WorkBox
-    Skills: list[str]
-    Agents: list[str]
     MCPServer: list[MCPServer]
 
     # CLI args
@@ -55,19 +58,15 @@ class RunConfig:
             path = Path(args.config).expanduser().resolve()
             config = load_file(path)
         if args.workspace is not None:
-            config["workbox"] = {
-                "workspace": args.workspace,
-            }
+            if "workbox" not in config:
+                config["workbox"] = {}
+            config["workbox"]["workspace"] = args.workspace
 
         workbox = WorkBox.from_dict(config.get("workbox", {}))
-        skills = config.get("skills", [])
-        agents = config.get("agents", [])
         mcp = [MCPServer.from_dict(d) for d in config.get("mcp", [])]
 
         return RunConfig(
             WorkBox=workbox,
-            Skills=skills,
-            Agents=agents,
             MCPServer=mcp,
             Detached=args.detached,
             EnvFile=(

@@ -134,13 +134,13 @@ def build_from_config(
     container_name = f"aicrate-{workspace_name}"
 
     skill_mounts: list[str] = []
-    for skill in cfg.Skills:
+    for skill in cfg.WorkBox.Skills:
         name = skill.split("/")[-1].split(":")[0]
         skill_mounts.append(
             f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
         )
     agent_mounts: list[str] = []
-    for agent in cfg.Agents:
+    for agent in cfg.WorkBox.Agents:
         name = agent.split("/")[-1].split(":")[0]
         agent_mounts.append(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
