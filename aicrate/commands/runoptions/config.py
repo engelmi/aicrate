@@ -31,13 +31,22 @@ class WorkBox:
     MountedWorkspace: Path
     InternalWorkspace: Path
 
+    Env: dict[str, str]
+    EnvFile: Optional[Path]
+
     def from_dict(data: dict) -> "WorkBox":
+        envfile = data.get("envfile", None)
+        if envfile is not None:
+            envfile = Path(envfile).expanduser().resolve()
+
         return WorkBox(
             OCIImage=data.get("image", "quay.io/aicrate/claudebox:latest"),
             Skills=data.get("skills", []),
             Agents=data.get("agents", []),
             MountedWorkspace=Path(data.get("workspace", "")).expanduser().resolve(),
             InternalWorkspace=Path("/workspace"),
+            EnvFile=envfile,
+            Env=data.get("env", {}),
         )
 
 
@@ -50,7 +59,6 @@ class RunConfig:
 
     # CLI args
     Detached: bool
-    EnvFile: Optional[Path]
 
     def from_args(args: argparse.Namespace) -> "RunConfig":
         config = {}
@@ -69,7 +77,4 @@ class RunConfig:
             WorkBox=workbox,
             MCPServer=mcp,
             Detached=args.detached,
-            EnvFile=(
-                None if not args.envfile else Path(args.envfile).expanduser().resolve()
-            ),
         )

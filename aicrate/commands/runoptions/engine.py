@@ -89,6 +89,10 @@ def run_aicrate(cfg: RunConfig):
         create_container_cli_box.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
         create_container_cli_box.extend(["--mount", agent_mount])
+    for key, value in cfg.WorkBox.Env.items():
+        create_container_cli_box.extend(["--env", f"{key}={value}"])
+    if cfg.WorkBox.EnvFile is not None:
+        create_container_cli_box.extend(["--env-file", f"{cfg.WorkBox.EnvFile}"])
     create_container_cli_box.extend([cfg.WorkBox.OCIImage, "/sbin/init"])
 
     # exec into aicrate container

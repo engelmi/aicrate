@@ -35,6 +35,9 @@ workbox:
     - quay.io/aicrate/obra/writing-skills:latest
   agents:
     - quay.io/aicrate/agency/engineering-code-reviewer:latest
+  env:
+    Key: Value
+  envfile: ~/.env
 mcp:
   - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
     port: 8081
