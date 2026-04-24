@@ -3,7 +3,7 @@ import pty
 from dataclasses import dataclass
 from pathlib import Path
 
-from aicrate.commands.runoptions.config import RunConfig
+from aicrate.commands.runoptions.config import BoxConfig, MCPServerConfig, RunConfig
 from aicrate.common.command import run_cmd_with_error_handler
 
 
@@ -32,32 +32,38 @@ class ClaudeJSON:
         )
 
 
-def run_aicrate(cfg: RunConfig):
-    workspace_name = cfg.WorkBox.MountedWorkspace.name
-
+def assemble_create_pod_cmd(workspace_name: str) -> tuple[str, list[str]]:
     pod_name = f"aicrate-{workspace_name}"
-    create_pod_cmd = [
-        "podman",
-        "pod",
-        "create",
-        "--replace",
-        "--exit-policy",
-        "stop",
-        "--infra-name",
-        f"{pod_name}-infra",
-        "--name",
-        pod_name,
-    ]
 
-    box_container_name = f"aicrate-{workspace_name}"
+    return (
+        pod_name,
+        [
+            "podman",
+            "pod",
+            "create",
+            "--replace",
+            "--exit-policy",
+            "stop",
+            "--infra-name",
+            f"{pod_name}-infra",
+            "--name",
+            pod_name,
+        ],
+    )
+
+
+def assemble_run_box_cmd(
+    box_name: str, box: BoxConfig, parent_pod_name: str
+) -> tuple[str, list[str]]:
+    box_container_name = f"aicrate-{box_name}"
     skill_mounts: list[str] = []
-    for skill in cfg.WorkBox.Skills:
+    for skill in box.Skills:
         name = skill.split("/")[-1].split(":")[0]
         skill_mounts.append(
             f"type=artifact,src={skill},dst=/var/oci-artifacts/skills/{name}"
         )
     agent_mounts: list[str] = []
-    for agent in cfg.WorkBox.Agents:
+    for agent in box.Agents:
         name = agent.split("/")[-1].split(":")[0]
         agent_mounts.append(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
@@ -66,9 +72,9 @@ def run_aicrate(cfg: RunConfig):
     volumes.append(
         f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
     )
-    volumes.append(f"{cfg.WorkBox.MountedWorkspace}:{cfg.WorkBox.InternalWorkspace}")
+    volumes.append(f"{box.MountedWorkspace}:{box.InternalWorkspace}")
 
-    create_container_cli_box = [
+    cmd = [
         "podman",
         "run",
         "--name",
@@ -81,40 +87,36 @@ def run_aicrate(cfg: RunConfig):
         "--security-opt",
         "label=disable",
         "--pod",
-        pod_name,
+        parent_pod_name,
     ]
     for volume in volumes:
-        create_container_cli_box.extend(["-v", volume])
+        cmd.extend(["-v", volume])
     for skill_mount in skill_mounts:
-        create_container_cli_box.extend(["--mount", skill_mount])
+        cmd.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
-        create_container_cli_box.extend(["--mount", agent_mount])
-    for key, value in cfg.WorkBox.Env.items():
-        create_container_cli_box.extend(["--env", f"{key}={value}"])
-    if cfg.WorkBox.EnvFile is not None:
-        create_container_cli_box.extend(["--env-file", f"{cfg.WorkBox.EnvFile}"])
-    create_container_cli_box.extend([cfg.WorkBox.OCIImage, "/sbin/init"])
+        cmd.extend(["--mount", agent_mount])
+    for key, value in box.Env.items():
+        cmd.extend(["--env", f"{key}={value}"])
+    if box.EnvFile is not None:
+        cmd.extend(["--env-file", f"{box.EnvFile}"])
+    cmd.extend([box.OCIImage, "/sbin/init"])
 
-    # exec into aicrate container
-    exec_into_cli_box_cmd = [
-        "podman",
-        "exec",
-        "-it",
-        "--workdir",
-        "/workspace",
-        box_container_name,
-        "/bin/bash",
-    ]
+    return (box_container_name, cmd)
 
-    mcp_servers_in_config: list[MCPServer] = []
+
+def assemble_run_mcp_cmds(
+    mcp_server: list[MCPServerConfig], workspace_name: str, parent_pod_name: str
+) -> tuple[dict[str, list[str]], ClaudeJSON]:
+    mcp_servers_in_config: list[MCPServerConfig] = []
     create_mcp_container_cmds: dict[str, list[str]] = {}
-    for mcp in cfg.MCPServer:
+    for mcp in mcp_server:
         mcp_name = mcp.OCIImage.rsplit("/", 1)[1].split(":")[0]
+        container_name = f"{mcp_name}-{workspace_name}"
         cmd = [
             "podman",
             "run",
             "--name",
-            f"{mcp_name}-{workspace_name}",
+            container_name,
             "--replace",
             "--rm",
             "--pull",
@@ -123,37 +125,71 @@ def run_aicrate(cfg: RunConfig):
             "--security-opt",
             "label=disable",
             "--pod",
-            pod_name,
+            parent_pod_name,
         ]
         for env_var in mcp.Env:
             for k, v in env_var.items():
                 cmd.extend(["--env", f"{k}={v}"])
         cmd.append(mcp.OCIImage)
 
-        create_mcp_container_cmds[mcp_name] = cmd
+        create_mcp_container_cmds[container_name] = cmd
 
         mcp_servers_in_config.append(
             MCPServer(Name=mcp_name, Type="sse", URL=f"http://localhost:{mcp.Port}/sse")
         )
 
-    run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create aicrate pod")
+    return (create_mcp_container_cmds, ClaudeJSON(mcp_servers_in_config))
 
+
+def run_aicrate(cfg: RunConfig):
+    workspace_name = cfg.WorkBox.MountedWorkspace.name
+
+    pod_name, create_pod_cmd = assemble_create_pod_cmd(workspace_name)
+    workbox_container_name, create_container_cli_box = assemble_run_box_cmd(
+        workspace_name, cfg.WorkBox, pod_name
+    )
+
+    create_agentbox_container_cmds: dict[str, list[str]] = {}
+    i = 0
+    for agentbox in cfg.AgentBoxes:
+        name, cmd = assemble_run_box_cmd(
+            f"{workspace_name}-agent-{i}", agentbox, pod_name
+        )
+        create_agentbox_container_cmds[name] = cmd
+
+    # cmd to exec into aicrate workbox container
+    exec_into_cli_box_cmd = [
+        "podman",
+        "exec",
+        "-it",
+        "--workdir",
+        "/workspace",
+        workbox_container_name,
+        "/bin/bash",
+    ]
+    create_mcp_container_cmds, claude_json = assemble_run_mcp_cmds(
+        cfg.MCPServer, workspace_name, pod_name
+    )
+
+    run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create aicrate pod")
     run_cmd_with_error_handler(
         create_container_cli_box, [], "Failed to create aicrate container"
     )
-    claude_json = ClaudeJSON(mcp_servers_in_config).to_config()
     create_claude_json_cmd = [
         "podman",
         "exec",
-        box_container_name,
+        workbox_container_name,
         "sh",
         "-c",
-        f"""cat > /root/.claude.json << \"EOF\"\n{claude_json}\nEOF""",
+        f"""cat > /root/.claude.json << \"EOF\"\n{claude_json.to_config()}\nEOF""",
     ]
     run_cmd_with_error_handler(
         create_claude_json_cmd, [], "Failed to create initial .claude.json"
     )
-
+    for name, cmd in create_agentbox_container_cmds.items():
+        run_cmd_with_error_handler(
+            cmd, [], f"Failed to create AI agent container {name}"
+        )
     for name, cmd in create_mcp_container_cmds.items():
         run_cmd_with_error_handler(
             cmd, [], f"Failed to create MCP server container {name}"
@@ -166,13 +202,23 @@ def run_aicrate(cfg: RunConfig):
             run_cmd_with_error_handler(
                 ["podman", "stop", pod_name], [], f"Failed to stop {pod_name}"
             )
+            for name in create_agentbox_container_cmds.keys():
+                # do not break on an exception and keep stopping AI agent containers
+                try:
+                    run_cmd_with_error_handler(
+                        ["podman", "stop", name],
+                        [],
+                        f"Failed to stop AI agent container {name}",
+                    )
+                except Exception:
+                    pass
             for name in create_mcp_container_cmds.keys():
                 # do not break on an exception and keep stopping mcp containers
                 try:
                     run_cmd_with_error_handler(
-                        ["podman", "stop", f"{name}-{workspace_name}"],
+                        ["podman", "stop", name],
                         [],
-                        f"Failed to stop MCP server {name}",
+                        f"Failed to stop MCP server container {name}",
                     )
                 except Exception:
                     pass

@@ -37,7 +37,22 @@ workbox:
     - quay.io/aicrate/agency/engineering-code-reviewer:latest
   env:
     Key: Value
+    Key2: Value2
   envfile: ~/.env
+
+agentboxes:
+  - image: quay.io/aicrate/claudebox:latest
+    workspace: ~/projects/engelmi/aicrate
+    skills:
+      - quay.io/aicrate/mkemel/jira-acli:latest
+      - quay.io/aicrate/anthropic/algorithmic-art:latest
+    agents:
+      - quay.io/aicrate/agency/engineering-code-reviewer:latest
+    env:
+      Key: Value
+      Key2: Value2
+    envfile: ~/.env
+
 mcp:
   - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
     port: 8081

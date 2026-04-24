@@ -7,14 +7,14 @@ from aicrate.common.file import load_file
 
 
 @dataclass
-class MCPServer:
+class MCPServerConfig:
 
     OCIImage: str
     Port: int
     Env: list[tuple[str, str]]
 
-    def from_dict(data: dict) -> "MCPServer":
-        return MCPServer(
+    def from_dict(data: dict) -> "MCPServerConfig":
+        return MCPServerConfig(
             OCIImage=data.get("image", ""),
             Port=data.get("port", ""),
             Env=[entry for entry in data.get("env", [])],
@@ -22,7 +22,7 @@ class MCPServer:
 
 
 @dataclass
-class WorkBox:
+class BoxConfig:
 
     OCIImage: str
     Skills: list[str]
@@ -34,12 +34,12 @@ class WorkBox:
     Env: dict[str, str]
     EnvFile: Optional[Path]
 
-    def from_dict(data: dict) -> "WorkBox":
+    def from_dict(data: dict) -> "BoxConfig":
         envfile = data.get("envfile", None)
         if envfile is not None:
             envfile = Path(envfile).expanduser().resolve()
 
-        return WorkBox(
+        return BoxConfig(
             OCIImage=data.get("image", "quay.io/aicrate/claudebox:latest"),
             Skills=data.get("skills", []),
             Agents=data.get("agents", []),
@@ -54,8 +54,9 @@ class WorkBox:
 class RunConfig:
 
     # Config file args
-    WorkBox: WorkBox
-    MCPServer: list[MCPServer]
+    WorkBox: BoxConfig
+    AgentBoxes: list[BoxConfig]
+    MCPServer: list[MCPServerConfig]
 
     # CLI args
     Detached: bool
@@ -70,11 +71,16 @@ class RunConfig:
                 config["workbox"] = {}
             config["workbox"]["workspace"] = args.workspace
 
-        workbox = WorkBox.from_dict(config.get("workbox", {}))
-        mcp = [MCPServer.from_dict(d) for d in config.get("mcp", [])]
+        workbox = BoxConfig.from_dict(config.get("workbox", {}))
+        agentboxes = [
+            BoxConfig.from_dict(box_config)
+            for box_config in config.get("agentboxes", [])
+        ]
+        mcp = [MCPServerConfig.from_dict(d) for d in config.get("mcp", [])]
 
         return RunConfig(
             WorkBox=workbox,
+            AgentBoxes=agentboxes,
             MCPServer=mcp,
             Detached=args.detached,
         )
