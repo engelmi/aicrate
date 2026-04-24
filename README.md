@@ -56,7 +56,9 @@ See [aicrate on quay.io](https://quay.io/organization/aicrate) for pre-built and
 
 ## Similar projects
 
-- [LobsterTrap/puzzlepod](https://github.com/LobsterTrap/puzzlepod) \ 
-PuzzlePod and aicrate leverage Podman and systemd and run the agents inside a container. However, while PuzzlePod adds a governance layer on top (e.g. automated commit/rollback decisions), aicrate leverages [OCI artifacts](https://edu.chainguard.dev/open-source/oci/what-are-oci-artifacts/) to manage skills and agents in OCI registries.
+- [LobsterTrap/puzzlepod](https://github.com/LobsterTrap/puzzlepod) \
+`PuzzlePod` and aicrate leverage Podman and systemd and run the agents inside a container. However, while PuzzlePod adds a governance layer on top (e.g. automated commit/rollback decisions), `aicrate` leverages [OCI artifacts](https://edu.chainguard.dev/open-source/oci/what-are-oci-artifacts/) to manage skills and agents in OCI registries.
 - [NVIDIA/OpenShell](https://github.com/NVIDIA/OpenShell) \
-OpenShell provides a safe, private runtime for autonomous AI agents. Its goal are multi-tenant enterprise deployments while aicrate is intended for local usage by a single developer.
+`OpenShell` provides a safe, private runtime for autonomous AI agents. Its goal are multi-tenant enterprise deployments while `aicrate` is intended for local usage by a single developer.
+- [fletchgpc/agentbox](https://github.com/fletchgqc/agentbox) \
+`agentbox` provides a container-based environment for automated AI agents for more safety. `aicrate` adds the concepts of skills and agents as OCI artifacts to use, share and maintain them.
