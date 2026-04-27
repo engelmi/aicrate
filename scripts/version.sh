@@ -1,8 +1,8 @@
 #!/bin/bash -e
 
-VERSION="0.3.0"
+VERSION="0.4.0"
 RELEASE="1"
-IS_RELEASE="1"
+IS_RELEASE="0"
 RELEASE_FILE=$(dirname "$(readlink -f "$0")")/RELEASE
 
 function short(){
