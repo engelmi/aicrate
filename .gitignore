@@ -9,3 +9,4 @@ aicrate/version.py
 pyproject.toml
 scripts/RELEASE
 .env
+.vscode/
