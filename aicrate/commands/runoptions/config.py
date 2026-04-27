@@ -66,9 +66,10 @@ class RunConfig:
         if args.config is not None:
             path = Path(args.config).expanduser().resolve()
             config = load_file(path)
-        if args.workspace is not None:
-            if "workbox" not in config:
-                config["workbox"] = {}
+
+        if "workbox" not in config:
+            config["workbox"] = {}
+        if "workspace" not in config["workbox"]:
             config["workbox"]["workspace"] = args.workspace
 
         workbox = BoxConfig.from_dict(config.get("workbox", {}))
