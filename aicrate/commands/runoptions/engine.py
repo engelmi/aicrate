@@ -156,6 +156,7 @@ def run_aicrate(cfg: RunConfig):
             f"{workspace_name}-agent-{i}", agentbox, pod_name
         )
         create_agentbox_container_cmds[name] = cmd
+        i += 1
 
     # cmd to exec into aicrate workbox container
     exec_into_cli_box_cmd = [
