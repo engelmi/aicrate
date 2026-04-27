@@ -13,3 +13,6 @@
 [submodule "submodules/mkemel"]
 	path = submodules/mkemel
 	url = https://gitlab.com/mkemel/claude-skill-jira-acli.git
+[submodule "submodules/juanje/wiki-kb"]
+	path = submodules/juanje/wiki-kb
+	url = git@github.com:juanje/wiki-kb.git
