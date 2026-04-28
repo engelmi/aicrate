@@ -41,6 +41,7 @@ def parse_arguments(
     add_run_parser(subparsers)
     add_build_parser(subparsers)
     add_push_parser(subparsers)
+    add_pull_parser(subparsers)
     add_list_parser(subparsers)
 
     return parser.parse_args(args), parser
@@ -239,10 +240,25 @@ def add_pull_parser(parent_parser: argparse._SubParsersAction):
     pull_parser = parent_parser.add_parser(
         "pull", help="Pull OCI artifacts from registry", usage="aicrate pull <artifact>"
     )
-    pull_parser.set_defaults(func=pull.pull)
 
-    pull_parser.add_argument(
+    subparsers = pull_parser.add_subparsers(dest="pull_subcommand")
+
+    pull_artifact_parser = subparsers.add_parser(
+        "artifact", help="Pull an OCI artifact from registry"
+    )
+    pull_artifact_parser.set_defaults(func=pull.pull_artifact)
+    pull_artifact_parser.add_argument(
         "artifact",
         help=("Artifact to pull from registry"),
+        nargs=1,
+    )
+
+    pull_image_parser = subparsers.add_parser(
+        "image", help="Pull an OCI image from registry"
+    )
+    pull_image_parser.set_defaults(func=pull.pull_image)
+    pull_image_parser.add_argument(
+        "image",
+        help=("Image to pull from registry"),
         nargs=1,
     )
