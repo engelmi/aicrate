@@ -3,13 +3,13 @@ import shutil
 from pathlib import Path
 from typing import Optional
 
+import aicrate.engine.git as git
+import aicrate.engine.podman as engine
+import aicrate.engine.tar as tar
 from aicrate.commands.consts import (
-    ArtifactAnnotationGitRemote,
-    ArtifactAnnotationGitVersion,
     ArtifactTypeAgentManifest,
     ArtifactTypeSkillManifest,
 )
-from aicrate.common.command import run_cmd, run_cmd_with_error_handler
 from aicrate.logger import logger
 
 TMP_BUILD_DIR = Path("/var/tmp/aicrate")
@@ -28,22 +28,8 @@ def build_workbox(args: argparse.Namespace):
     tag_version = "latest"
 
     tag = f"{tag_registry}/{tag_organization}/{name}:{tag_version}"
-
     dir = Path(args.dir).expanduser().resolve()
-
-    run_cmd_with_error_handler(
-        [
-            "podman",
-            "build",
-            "-f",
-            "Containerfile",
-            "-t",
-            tag,
-            f"{dir}",
-        ],
-        [],
-        f"Failed to build workbox from Containerfile in '{dir}'",
-    )
+    engine.bulid_image(tag, dir)
 
 
 def build_agent(args: argparse.Namespace):
@@ -88,30 +74,15 @@ def build_artifact(
     if subgroup:
         artifact_tag = f"{tag_registry}/{tag_organization}/{subgroup}/{artifact_dir.stem}:{tag_version}"
 
-    run_cmd_with_error_handler(
-        [
-            "tar",
-            "-c",
-            "-f",
-            tmp_tarball,
-            "-C",
-            f"{artifact_dir.parent}",
-            f"{artifact_dir.name}",
-        ],
-        [],
-        f"Failed to build temporary tarball for artifact '{artifact_dir}'",
-    )
+    tar.create_tarball(tmp_tarball, artifact_dir)
 
     git_remote = "N/A"
     git_version = "N/A"
     try:
-        version = run_cmd(["git", "-C", artifact_dir.parent, "rev-parse", "HEAD"], [])
+        version = git.current_commit_hash(artifact_dir.parent)
         if version:
             git_version = version.strip()
-        remote = run_cmd(
-            ["git", "-C", artifact_dir.parent, "config", "--get", "remote.origin.url"],
-            [],
-        )
+        remote = git.current_remote_url(artifact_dir.parent)
         if remote:
             git_remote = remote.strip()
 
@@ -119,21 +90,6 @@ def build_artifact(
         logger.warning("Failed to get git information, proceeding.")
         logger.debug(f"Failure reason: {ex}")
 
-    run_cmd_with_error_handler(
-        [
-            "podman",
-            "artifact",
-            "add",
-            "--replace",
-            artifact_tag,
-            tmp_tarball,
-            "--type",
-            artifact_type,
-            "--annotation",
-            f"{ArtifactAnnotationGitRemote}={git_remote}",
-            "--annotation",
-            f"{ArtifactAnnotationGitVersion}={git_version}",
-        ],
-        [],
-        f"Failed to build OCI artifact from tarball '{tmp_tarball}'",
+    engine.build_artifact(
+        artifact_tag, tmp_tarball, artifact_type, git_remote, git_version
     )

@@ -1,19 +1,13 @@
 import argparse
 
-from aicrate.common.command import run_cmd_with_error_handler
+import aicrate.engine.podman as engine
 
 
 def push_artifact(args: argparse.Namespace):
-
     artifact = args.artifact[0]
-    run_cmd_with_error_handler(
-        ["podman", "artifact", "push", artifact], [], f"Failed to push '{artifact}'"
-    )
+    engine.push_artifact(artifact)
 
 
 def push_image(args: argparse.Namespace):
-
     image = args.image[0]
-    run_cmd_with_error_handler(
-        ["podman", "image", "push", image], [], f"Failed to push '{image}'"
-    )
+    engine.push_image(image)

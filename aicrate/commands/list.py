@@ -4,13 +4,13 @@ from dataclasses import asdict, dataclass
 
 import tabulate
 
+import aicrate.engine.podman as engine
 from aicrate.commands.consts import (
     ArtifactAnnotationGitRemote,
     ArtifactAnnotationGitVersion,
     ArtifactTypeAgentManifest,
     ArtifactTypeSkillManifest,
 )
-from aicrate.common.command import run_cmd, run_cmd_with_error_handler
 
 
 @dataclass
@@ -25,15 +25,11 @@ class ListedArtifact:
 def list_artifacts() -> list[ListedArtifact]:
     artifacts: list[ListedArtifact] = []
 
-    res = run_cmd_with_error_handler(
-        ["podman", "artifact", "ls", "--format", "{{.Repository}}:{{.Tag}}"],
-        [],
-        "Failed to list artifacts",
-    )
+    res = engine.list_artifacts()
     for artifact in res.split("\n"):
         if not artifact:
             continue
-        output = run_cmd(["podman", "artifact", "inspect", artifact], [], True)
+        output = engine.inspect_artifact(artifact, True)
         if output:
             json_output = json.loads(output)
             artifactType = json_output.get("Manifest", {}).get("artifactType", None)
