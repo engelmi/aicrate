@@ -22,6 +22,12 @@ class MCPServerConfig:
 
 
 @dataclass
+class MountConfig:
+    From: Path
+    To: Path
+
+
+@dataclass
 class BoxConfig:
 
     OCIImage: str
@@ -30,6 +36,8 @@ class BoxConfig:
 
     MountedWorkspace: Path
     InternalWorkspace: Path
+
+    AdditionalMounts: list[MountConfig]
 
     Env: dict[str, str]
     EnvFile: Optional[Path]
@@ -45,6 +53,15 @@ class BoxConfig:
             Agents=data.get("agents", []),
             MountedWorkspace=Path(data.get("workspace", "")).expanduser().resolve(),
             InternalWorkspace=Path("/workspace"),
+            AdditionalMounts=[
+                (
+                    MountConfig(
+                        Path(mount["from"]).expanduser().resolve(),
+                        Path(mount["to"]).expanduser().resolve(),
+                    )
+                )
+                for mount in data.get("mounts", [])
+            ],
             EnvFile=envfile,
             Env=data.get("env", {}),
         )

@@ -1,7 +1,6 @@
 import json
 import pty
 from dataclasses import dataclass
-from pathlib import Path
 
 from aicrate.commands.runoptions.config import BoxConfig, MCPServerConfig, RunConfig
 from aicrate.common.command import run_cmd_with_error_handler
@@ -69,10 +68,9 @@ def assemble_run_box_cmd(
             f"type=artifact,src={agent},dst=/var/oci-artifacts/agents/{name}"
         )
     volumes: list[str] = []
-    volumes.append(
-        f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
-    )
     volumes.append(f"{box.MountedWorkspace}:{box.InternalWorkspace}")
+    for mount in box.AdditionalMounts:
+        volumes.append(f"{mount.From}:{mount.To}")
 
     cmd = [
         "podman",
