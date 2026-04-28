@@ -2,8 +2,10 @@ import json
 import pty
 from dataclasses import dataclass
 
+import aicrate.engine.podman as engine
 from aicrate.commands.runoptions.config import BoxConfig, MCPServerConfig, RunConfig
 from aicrate.common.command import run_cmd_with_error_handler
+from aicrate.logger import logger
 
 
 @dataclass
@@ -140,6 +142,25 @@ def assemble_run_mcp_cmds(
 
 
 def run_aicrate(cfg: RunConfig):
+    # pull images and artifacts prior to command assembly
+    images: set[str] = set(
+        [cfg.WorkBox.OCIImage, *[box.OCIImage for box in cfg.AgentBoxes]]
+    )
+    artifacts: set[str] = set(
+        [
+            *[skill for skill in cfg.WorkBox.Skills],
+            *[agent for agent in cfg.WorkBox.Agents],
+            *[skill for box in cfg.AgentBoxes for skill in box.Skills],
+            *[agent for box in cfg.AgentBoxes for agent in box.Agents],
+        ]
+    )
+    logger.info("Pulling images...")
+    for image in images:
+        engine.pull_image(image)
+    logger.info("Pulling artifacts...")
+    for artifact in artifacts:
+        engine.pull_artifact(artifact)
+
     workspace_name = cfg.WorkBox.MountedWorkspace.name
 
     pod_name, create_pod_cmd = assemble_create_pod_cmd(workspace_name)
