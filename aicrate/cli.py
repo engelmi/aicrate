@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 from typing import Sequence, Tuple
 
-from aicrate.commands import build, list, pull, push, run
+from aicrate.commands import build, list, pull, push, run, stop
 from aicrate.logger import LogLevel
 from aicrate.version import version
 
@@ -39,6 +39,7 @@ def parse_arguments(
     subparsers.required = False
 
     add_run_parser(subparsers)
+    add_stop_parser(subparsers)
     add_build_parser(subparsers)
     add_push_parser(subparsers)
     add_pull_parser(subparsers)
@@ -92,6 +93,17 @@ def add_run_parser(parent_parser: argparse._SubParsersAction):
         dest="detached",
         help=("Run aicrate in detached mode."),
         action="store_true",
+    )
+
+
+def add_stop_parser(parent_parser: argparse._SubParsersAction):
+    stop_parser = parent_parser.add_parser("stop", help="Stop an aicrate pod")
+    stop_parser.set_defaults(func=stop.stop)
+
+    stop_parser.add_argument(
+        "pod",
+        help=("Name of the aicrate pod to stop"),
+        nargs=1,
     )
 
 

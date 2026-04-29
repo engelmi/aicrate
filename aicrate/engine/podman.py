@@ -100,3 +100,11 @@ def build_artifact(
         [],
         f"Failed to build OCI artifact from tarball '{resource}'",
     )
+
+
+def stop_pod(pod_name: str) -> str:
+    return run_cmd_with_error_handler(
+        ["podman", "pod", "stop", pod_name],
+        [],
+        f"Failed to stop pod '{pod_name}' and its linked containers",
+    )
