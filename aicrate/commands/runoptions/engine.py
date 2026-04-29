@@ -7,6 +7,8 @@ from aicrate.commands.runoptions.config import BoxConfig, MCPServerConfig, RunCo
 from aicrate.common.command import run_cmd_with_error_handler
 from aicrate.logger import logger
 
+IGNITE_SCRIPT_LOCATION = "/var/ignite.sh"
+
 
 @dataclass
 class MCPServer:
@@ -55,7 +57,7 @@ def assemble_create_pod_cmd(workspace_name: str) -> tuple[str, list[str]]:
 
 def assemble_run_box_cmd(
     box_name: str, box: BoxConfig, parent_pod_name: str
-) -> tuple[str, list[str]]:
+) -> tuple[str, list[str], list[str]]:
     box_container_name = f"aicrate-{box_name}"
     skill_mounts: list[str] = []
     for skill in box.Skills:
@@ -74,7 +76,7 @@ def assemble_run_box_cmd(
     for mount in box.AdditionalMounts:
         volumes.append(f"{mount.From}:{mount.To}")
 
-    cmd = [
+    run_cmd = [
         "podman",
         "run",
         "--name",
@@ -90,18 +92,29 @@ def assemble_run_box_cmd(
         parent_pod_name,
     ]
     for volume in volumes:
-        cmd.extend(["-v", volume])
+        run_cmd.extend(["-v", volume])
     for skill_mount in skill_mounts:
-        cmd.extend(["--mount", skill_mount])
+        run_cmd.extend(["--mount", skill_mount])
     for agent_mount in agent_mounts:
-        cmd.extend(["--mount", agent_mount])
+        run_cmd.extend(["--mount", agent_mount])
     for key, value in box.Env.items():
-        cmd.extend(["--env", f"{key}={value}"])
+        run_cmd.extend(["--env", f"{key}={value}"])
     if box.EnvFile is not None:
-        cmd.extend(["--env-file", f"{box.EnvFile}"])
-    cmd.extend([box.OCIImage, "/sbin/init"])
+        run_cmd.extend(["--env-file", f"{box.EnvFile}"])
+    run_cmd.extend([box.OCIImage, "/sbin/init"])
 
-    return (box_container_name, cmd)
+    create_ignite_script_cmd = []
+    if box.Ignite is not None:
+        create_ignite_script_cmd = [
+            "podman",
+            "exec",
+            box_container_name,
+            "sh",
+            "-c",
+            f"""cat > {IGNITE_SCRIPT_LOCATION} << \"EOF\"\n{box.Ignite.ScriptContent}\nEOF""",
+        ]
+
+    return (box_container_name, run_cmd, create_ignite_script_cmd)
 
 
 def assemble_run_mcp_cmds(
@@ -142,7 +155,10 @@ def assemble_run_mcp_cmds(
 
 
 def run_aicrate(cfg: RunConfig):
+
+    ############################
     # pull images and artifacts prior to command assembly
+    #
     images: set[str] = set(
         [cfg.WorkBox.OCIImage, *[box.OCIImage for box in cfg.AgentBoxes]]
     )
@@ -161,20 +177,25 @@ def run_aicrate(cfg: RunConfig):
     for artifact in artifacts:
         engine.pull_artifact(artifact)
 
+    ############################
+    # assemble commands
+    #
     workspace_name = cfg.WorkBox.MountedWorkspace.name
 
     pod_name, create_pod_cmd = assemble_create_pod_cmd(workspace_name)
-    workbox_container_name, create_container_cli_box = assemble_run_box_cmd(
-        workspace_name, cfg.WorkBox, pod_name
-    )
+    (
+        workbox_container_name,
+        create_container_cli_box,
+        create_cli_box_ignite_script_cmd,
+    ) = assemble_run_box_cmd(workspace_name, cfg.WorkBox, pod_name)
 
-    create_agentbox_container_cmds: dict[str, list[str]] = {}
+    create_agentbox_container_cmds: dict[str, tuple[list[str], list[str]]] = {}
     i = 0
     for agentbox in cfg.AgentBoxes:
-        name, cmd = assemble_run_box_cmd(
+        name, run_cmd, ignite_cmd = assemble_run_box_cmd(
             f"{workspace_name}-agent-{i}", agentbox, pod_name
         )
-        create_agentbox_container_cmds[name] = cmd
+        create_agentbox_container_cmds[name] = (run_cmd, ignite_cmd)
         i += 1
 
     # cmd to exec into aicrate workbox container
@@ -191,6 +212,9 @@ def run_aicrate(cfg: RunConfig):
         cfg.MCPServer, workspace_name, pod_name
     )
 
+    ############################
+    # run all commands
+    #
     run_cmd_with_error_handler(create_pod_cmd, [], "Failed to create aicrate pod")
     run_cmd_with_error_handler(
         create_container_cli_box, [], "Failed to create aicrate container"
@@ -206,10 +230,33 @@ def run_aicrate(cfg: RunConfig):
     run_cmd_with_error_handler(
         create_claude_json_cmd, [], "Failed to create initial .claude.json"
     )
-    for name, cmd in create_agentbox_container_cmds.items():
+    if create_cli_box_ignite_script_cmd:
         run_cmd_with_error_handler(
-            cmd, [], f"Failed to create AI agent container {name}"
+            create_cli_box_ignite_script_cmd,
+            [],
+            "Failed to create ignite script for workbox",
         )
+        run_cmd_with_error_handler(
+            ["podman", "exec", workbox_container_name, "bash", IGNITE_SCRIPT_LOCATION],
+            [],
+            "Failed to run ignite script for AI agent",
+        )
+
+    for name, cmds in create_agentbox_container_cmds.items():
+        run_cmd, ignite_cmd = cmds
+        run_cmd_with_error_handler(
+            run_cmd, [], f"Failed to create AI agent container {name}"
+        )
+        if ignite_cmd:
+            run_cmd_with_error_handler(
+                ignite_cmd, [], f"Failed to create ignite script for AI agent '{name}'"
+            )
+            run_cmd_with_error_handler(
+                ["podman", "exec", name, "bash", IGNITE_SCRIPT_LOCATION],
+                [],
+                f"Failed to run ignite script for AI agent '{name}'",
+            )
+
     for name, cmd in create_mcp_container_cmds.items():
         run_cmd_with_error_handler(
             cmd, [], f"Failed to create MCP server container {name}"

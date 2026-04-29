@@ -28,6 +28,11 @@ class MountConfig:
 
 
 @dataclass
+class Ignite:
+    ScriptContent: str
+
+
+@dataclass
 class BoxConfig:
 
     OCIImage: str
@@ -42,10 +47,24 @@ class BoxConfig:
     Env: dict[str, str]
     EnvFile: Optional[Path]
 
+    Ignite: Optional[Ignite]
+
     def from_dict(data: dict) -> "BoxConfig":
         envfile = data.get("envfile", None)
         if envfile is not None:
             envfile = Path(envfile).expanduser().resolve()
+
+        ignite: Optional[Ignite] = None
+        ignite_script = data.get("ignite", {}).get("script", None)
+        if ignite_script is not None:
+            ignite = Ignite(ScriptContent=ignite_script)
+        # Give preference to the ignite file over the written script
+        ignite_file = data.get("ignite", {}).get("file", None)
+        if ignite_file is not None:
+            ignite_file_path = Path(ignite_file)
+            if ignite_file_path.exists():
+                with open(ignite_file_path, "r") as f:
+                    ignite = Ignite(ScriptContent=f.read())
 
         return BoxConfig(
             OCIImage=data.get("image", "quay.io/aicrate/claudebox:latest"),
@@ -64,6 +83,7 @@ class BoxConfig:
             ],
             EnvFile=envfile,
             Env=data.get("env", {}),
+            Ignite=ignite,
         )
 
 

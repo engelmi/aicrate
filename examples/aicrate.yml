@@ -39,6 +39,9 @@ workbox:
     Key: Value
     Key2: Value2
   envfile: ~/.env
+  ignite:
+    script: |
+      echo "Hello World"
 
 agentboxes:
   - image: quay.io/aicrate/claudebox:latest
@@ -52,6 +55,9 @@ agentboxes:
       Key: Value
       Key2: Value2
     envfile: ~/.env
+    ignite:
+      script: |
+        echo "Hello World"
 
 mcp:
   - image: quay.io/rhivos-ai-tools/mcp-testing-farm-mcp:latest
