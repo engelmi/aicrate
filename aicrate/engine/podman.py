@@ -42,6 +42,23 @@ def list_artifacts() -> list[str]:
     return [e for e in res.strip().split("\n") if e]
 
 
+def list_images() -> list[str]:
+    res = run_cmd_with_error_handler(
+        [
+            "podman",
+            "image",
+            "ls",
+            "--format",
+            "{{.Repository}}:{{.Tag}}",
+            "--filter",  # Remove dangling images from
+            "dangling=false",  # the result list
+        ],
+        [],
+        "Failed to list images",
+    )
+    return [e for e in res.strip().split("\n") if e]
+
+
 def inspect_artifact(artifact: str, supress_error: bool = False) -> str:
     return run_cmd(["podman", "artifact", "inspect", artifact], [], supress_error)
 

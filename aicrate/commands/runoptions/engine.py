@@ -170,12 +170,19 @@ def run_aicrate(cfg: RunConfig):
             *[agent for box in cfg.AgentBoxes for agent in box.Agents],
         ]
     )
-    logger.info("Pulling images...")
+
+    available_images = engine.list_images()
+    logger.debug("Pulling images...")
     for image in images:
-        engine.pull_image(image)
-    logger.info("Pulling artifacts...")
+        if image not in available_images:
+            logger.info(f"Pulling image '{image}'")
+            engine.pull_image(image)
+    logger.debug("Pulling artifacts...")
+    available_artifacts = engine.list_artifacts()
     for artifact in artifacts:
-        engine.pull_artifact(artifact)
+        if artifact not in available_artifacts:
+            logger.info(f"Pulling artifact '{artifact}'")
+            engine.pull_artifact(artifact)
 
     ############################
     # assemble commands
