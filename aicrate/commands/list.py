@@ -25,10 +25,7 @@ class ListedArtifact:
 def list_artifacts() -> list[ListedArtifact]:
     artifacts: list[ListedArtifact] = []
 
-    res = engine.list_artifacts()
-    for artifact in res.split("\n"):
-        if not artifact:
-            continue
+    for artifact in engine.list_artifacts():
         output = engine.inspect_artifact(artifact, True)
         if output:
             json_output = json.loads(output)

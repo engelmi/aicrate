@@ -33,12 +33,13 @@ def push_image(image: str) -> str:
     )
 
 
-def list_artifacts() -> str:
-    return run_cmd_with_error_handler(
+def list_artifacts() -> list[str]:
+    res = run_cmd_with_error_handler(
         ["podman", "artifact", "ls", "--format", "{{.Repository}}:{{.Tag}}"],
         [],
         "Failed to list artifacts",
     )
+    return [e for e in res.strip().split("\n") if e]
 
 
 def inspect_artifact(artifact: str, supress_error: bool = False) -> str:
