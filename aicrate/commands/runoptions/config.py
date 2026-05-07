@@ -3,7 +3,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from aicrate.common.ds import deep_merge
 from aicrate.common.file import load_file
+
+DEFAULT_CONFIG_LOCATION = Path("~/.local/share/aicrate/aicrate.yml")
+
+
+def load_default_config() -> dict:
+    resolved_path = DEFAULT_CONFIG_LOCATION.expanduser().resolve()
+    if resolved_path.exists():
+        return load_file(resolved_path)
+    return {}
 
 
 @dataclass
@@ -99,10 +109,10 @@ class RunConfig:
     Detached: bool
 
     def from_args(args: argparse.Namespace) -> "RunConfig":
-        config = {}
+        config = load_default_config()
         if args.config is not None:
             path = Path(args.config).expanduser().resolve()
-            config = load_file(path)
+            config = deep_merge(config, load_file(path))
 
         if "workbox" not in config:
             config["workbox"] = {}
