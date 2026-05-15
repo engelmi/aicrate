@@ -212,6 +212,8 @@ def run_aicrate(cfg: RunConfig):
         "-it",
         "--workdir",
         "/workspace",
+        "--user",
+        "claude",
         workbox_container_name,
         "/bin/bash",
     ]
@@ -232,7 +234,7 @@ def run_aicrate(cfg: RunConfig):
         workbox_container_name,
         "sh",
         "-c",
-        f"""cat > /root/.claude.json << \"EOF\"\n{claude_json.to_config()}\nEOF""",
+        f"""cat > /home/claude/.claude.json << \"EOF\"\n{claude_json.to_config()}\nEOF""",
     ]
     run_cmd_with_error_handler(
         create_claude_json_cmd, [], "Failed to create initial .claude.json"

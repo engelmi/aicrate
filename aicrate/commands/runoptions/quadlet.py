@@ -148,7 +148,7 @@ def build_from_config(
 
     volumes: list[str] = []
     volumes.append(
-        f"{Path('~/.config/gcloud').expanduser().resolve()}:/root/.config/gcloud"
+        f"{Path('~/.config/gcloud').expanduser().resolve()}:/claude/.config/gcloud"
     )
     volumes.append(f"{cfg.WorkBox.MountedWorkspace}:{cfg.WorkBox.InternalWorkspace}")
 
